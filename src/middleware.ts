@@ -7,7 +7,9 @@ import { NextResponse, type NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const nonce = btoa(crypto.randomUUID());
   const dev = process.env.NODE_ENV !== "production";
-  const storageOrigin = process.env.OBJECT_STORAGE_PUBLIC_BASE_URL ? new URL(process.env.OBJECT_STORAGE_PUBLIC_BASE_URL).origin : "";
+  const storageOrigin = process.env.OBJECT_STORAGE_PUBLIC_BASE_URL
+    ? new URL(process.env.OBJECT_STORAGE_PUBLIC_BASE_URL).origin
+    : "";
   const csp = [
     `default-src 'self'`,
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
@@ -32,5 +34,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [{ source: "/((?!api/|_next/static|_next/image|favicon.ico).*)", missing: [{ type: "header", key: "next-router-prefetch" }] }],
+  matcher: [
+    {
+      source: "/((?!api/|_next/static|_next/image|favicon.ico).*)",
+      missing: [{ type: "header", key: "next-router-prefetch" }],
+    },
+  ],
 };

@@ -5,7 +5,11 @@ import { rateLimited } from "../errors";
  * Fixed-window rate limiter backed by Postgres so it works across serverless instances
  * without additional infrastructure. Atomic via INSERT … ON CONFLICT.
  */
-export async function consumeRateLimit(key: string, limit: number, windowSeconds: number): Promise<{ allowed: boolean; count: number }> {
+export async function consumeRateLimit(
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<{ allowed: boolean; count: number }> {
   const rows = await db.$queryRaw<{ count: number }[]>`
     INSERT INTO "rate_limit_buckets" ("key", "windowStart", "count")
     VALUES (${key}, now(), 1)

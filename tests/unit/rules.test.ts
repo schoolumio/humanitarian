@@ -9,7 +9,18 @@ import { normaliseNigerianPhone } from "@/lib/nigeria";
 import { parseChecklist } from "@/server/services/admin";
 
 describe("submission readiness", () => {
-  const complete = { fullName: "Ada Test", phone: "+2348030000000", state: "Lagos", categoryId: "c", whatHappened: "x", assistanceNeeded: "y", requestedAmountMinor: 100n, contactMethods: ["SMS"], budgetItemCount: 1, assessmentConsent: true };
+  const complete = {
+    fullName: "Ada Test",
+    phone: "+2348030000000",
+    state: "Lagos",
+    categoryId: "c",
+    whatHappened: "x",
+    assistanceNeeded: "y",
+    requestedAmountMinor: 100n,
+    contactMethods: ["SMS"],
+    budgetItemCount: 1,
+    assessmentConsent: true,
+  };
   it("passes a complete application without requiring evidence", () => {
     expect(submissionProblems(complete)).toEqual([]);
   });
@@ -20,34 +31,64 @@ describe("submission readiness", () => {
 });
 
 describe("eligibility decision rules (separation of duties)", () => {
-  const base = { status: "PENDING_APPROVAL" as const, deciderId: "cm2", applicantId: "app", reviews: [{ reviewerId: "cm1", recommendation: "APPROVE" as const }], reportAuthorIds: ["inv"], openScreeningOrRemoteTasks: 0 };
+  const base = {
+    status: "PENDING_APPROVAL" as const,
+    deciderId: "cm2",
+    applicantId: "app",
+    reviews: [{ reviewerId: "cm1", recommendation: "APPROVE" as const }],
+    reportAuthorIds: ["inv"],
+    openScreeningOrRemoteTasks: 0,
+  };
   it("allows an independent approval", () => expect(approvalBlockers(base)).toEqual([]));
-  it("blocks self-approval by the applicant", () => expect(approvalBlockers({ ...base, deciderId: "app" }).join()).toMatch(/own request/));
-  it("blocks the investigator deciding", () => expect(approvalBlockers({ ...base, deciderId: "inv" }).join()).toMatch(/investigator/));
+  it("blocks self-approval by the applicant", () =>
+    expect(approvalBlockers({ ...base, deciderId: "app" }).join()).toMatch(/own request/));
+  it("blocks the investigator deciding", () =>
+    expect(approvalBlockers({ ...base, deciderId: "inv" }).join()).toMatch(/investigator/));
   it("requires a review by someone other than the decider", () => {
     expect(approvalBlockers({ ...base, deciderId: "cm1" }).join()).toMatch(/independent reviewer/);
-    expect(approvalBlockers({ ...base, reviews: [{ reviewerId: "cm1", recommendation: "DECLINE" }] }).length).toBe(1);
+    expect(
+      approvalBlockers({ ...base, reviews: [{ reviewerId: "cm1", recommendation: "DECLINE" }] }).length,
+    ).toBe(1);
   });
-  it("requires verification checks to be resolved", () => expect(approvalBlockers({ ...base, openScreeningOrRemoteTasks: 2 }).length).toBe(1));
+  it("requires verification checks to be resolved", () =>
+    expect(approvalBlockers({ ...base, openScreeningOrRemoteTasks: 2 }).length).toBe(1));
 });
 
 describe("public text privacy guard", () => {
-  const applicant = { fullName: "Chiamaka Testperson Obi", phone: "+2348031234567", community: "Imaginary Close" };
+  const applicant = {
+    fullName: "Chiamaka Testperson Obi",
+    phone: "+2348031234567",
+    community: "Imaginary Close",
+  };
   it("flags full names, phone numbers and exact community", () => {
     expect(publicTextProblems("Chiamaka Testperson needs help", applicant).length).toBe(1);
     expect(publicTextProblems("Call 0803 123 4567", applicant).length).toBe(1);
     expect(publicTextProblems("Lives on Imaginary Close", applicant).length).toBe(1);
   });
-  it("flags sensational language", () => expect(publicTextProblems("A desperate mother", applicant).length).toBe(1));
-  it("accepts dignified, anonymised text", () => expect(publicTextProblems("A mother of three in Ikorodu needs safe accommodation.", applicant)).toEqual([]));
+  it("flags sensational language", () =>
+    expect(publicTextProblems("A desperate mother", applicant).length).toBe(1));
+  it("accepts dignified, anonymised text", () =>
+    expect(publicTextProblems("A mother of three in Ikorodu needs safe accommodation.", applicant)).toEqual(
+      [],
+    ));
 });
 
 describe("campaign publication consent", () => {
-  const ok = { visibility: "PUBLIC" as const, consents: new Map([["PUBLIC_CAMPAIGN_PAGE", true]]), openSafeguarding: false, budgetTotal: 100n, target: 100n, applicationStatus: "APPROVED" };
+  const ok = {
+    visibility: "PUBLIC" as const,
+    consents: new Map([["PUBLIC_CAMPAIGN_PAGE", true]]),
+    openSafeguarding: false,
+    budgetTotal: 100n,
+    target: 100n,
+    applicationStatus: "APPROVED",
+  };
   it("allows a consented public campaign", () => expect(campaignPublicationBlockers(ok)).toEqual([]));
-  it("blocks a public page without consent", () => expect(campaignPublicationBlockers({ ...ok, consents: new Map() }).length).toBe(1));
-  it("sponsors-only requires sponsor reporting consent", () => expect(campaignPublicationBlockers({ ...ok, visibility: "SPONSORS_ONLY" }).length).toBe(1));
-  it("blocks mismatched budgets", () => expect(campaignPublicationBlockers({ ...ok, budgetTotal: 90n }).length).toBe(1));
+  it("blocks a public page without consent", () =>
+    expect(campaignPublicationBlockers({ ...ok, consents: new Map() }).length).toBe(1));
+  it("sponsors-only requires sponsor reporting consent", () =>
+    expect(campaignPublicationBlockers({ ...ok, visibility: "SPONSORS_ONLY" }).length).toBe(1));
+  it("blocks mismatched budgets", () =>
+    expect(campaignPublicationBlockers({ ...ok, budgetTotal: 90n }).length).toBe(1));
 });
 
 describe("contribution amounts", () => {
@@ -68,9 +109,21 @@ describe("refunds", () => {
 });
 
 describe("disbursement approval", () => {
-  const base = { status: "REQUESTED", requestedById: "a", approverId: "b", supplierVerified: true, amount: 100n, available: 100n, hasInvoice: true };
-  it("allows independent approval within available funds", () => expect(disbursementApprovalBlockers(base)).toEqual([]));
-  it("blocks self-approval", () => expect(disbursementApprovalBlockers({ ...base, approverId: "a" }).join()).toMatch(/different finance officer/));
+  const base = {
+    status: "REQUESTED",
+    requestedById: "a",
+    approverId: "b",
+    supplierVerified: true,
+    amount: 100n,
+    available: 100n,
+    hasInvoice: true,
+  };
+  it("allows independent approval within available funds", () =>
+    expect(disbursementApprovalBlockers(base)).toEqual([]));
+  it("blocks self-approval", () =>
+    expect(disbursementApprovalBlockers({ ...base, approverId: "a" }).join()).toMatch(
+      /different finance officer/,
+    ));
   it("blocks insufficient funds and unverified suppliers", () => {
     expect(disbursementApprovalBlockers({ ...base, available: 99n }).length).toBe(1);
     expect(disbursementApprovalBlockers({ ...base, supplierVerified: false }).length).toBe(1);

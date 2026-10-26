@@ -34,8 +34,10 @@ export function completionBlockers(input: {
   openDisbursements: number;
 }): string[] {
   const blockers: string[] = [];
-  for (const item of input.checklist) if (!item.done) blockers.push(`Checklist item not complete: ${item.label}`);
+  for (const item of input.checklist)
+    if (!item.done) blockers.push(`Checklist item not complete: ${item.label}`);
   if (input.deliveryEvidenceCount === 0) blockers.push("No delivery evidence has been recorded.");
-  if (input.openDisbursements > 0) blockers.push("There are disbursements still awaiting approval or payment.");
+  if (input.openDisbursements > 0)
+    blockers.push("There are disbursements still awaiting approval or payment.");
   return blockers;
 }

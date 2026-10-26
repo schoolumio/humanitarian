@@ -6,6 +6,7 @@ import { E2E_ENV, E2E_PASSWORD } from "./support/env";
 type Data = {
   appB: { id: string; reference: string };
   appC: { id: string; reference: string };
+  appUnassigned: { id: string; reference: string };
   campaignD: { id: string; publicId: string };
   campaignG: { id: string; publicId: string };
   appG: { reference: string };
@@ -38,7 +39,9 @@ test("Journey A: an applicant registers, submits a request and checks its status
   await page.getByLabel("Password", { exact: true }).fill("a fictional long phrase");
   await page.getByLabel("Confirm password").fill("a fictional long phrase");
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page.getByRole("status").filter({ hasNotText: "Loading" }).first()).toContainText("sent a confirmation link");
+  await expect(page.getByRole("status").filter({ hasNotText: "Loading" }).first()).toContainText(
+    "sent a confirmation link",
+  );
 
   await login(page, "amaka.fictional@e2e.test", "a fictional long phrase");
   await page.goto("/apply/start");
@@ -60,8 +63,12 @@ test("Journey A: an applicant registers, submits a request and checks its status
   await page.getByRole("button", { name: "Save and continue" }).click();
 
   await expect(page.getByRole("heading", { name: /Step 3 of 8/ })).toBeVisible();
-  await page.getByLabel("What happened?").fill("A fictional storm destroyed the roof of the room we rent, and our belongings were damaged.");
-  await page.getByLabel("What assistance do you need?").fill("Help with rent for a safe room and new mattresses.");
+  await page
+    .getByLabel("What happened?")
+    .fill("A fictional storm destroyed the roof of the room we rent, and our belongings were damaged.");
+  await page
+    .getByLabel("What assistance do you need?")
+    .fill("Help with rent for a safe room and new mattresses.");
   await page.getByLabel("Why is the assistance needed now?").fill("The rainy season has started.");
   await page.getByLabel("What would successful support achieve?").fill("A safe, dry place for my children.");
   await page.getByRole("button", { name: "Save and continue" }).click();
@@ -86,7 +93,9 @@ test("Journey A: an applicant registers, submits a request and checks its status
   await expect(page.getByText("₦180,000").first()).toBeVisible();
   await page.getByRole("button", { name: "Submit my request" }).click();
   await expect(page.getByText("Your request has been submitted")).toBeVisible();
-  const reference = (await page.getByRole("heading", { level: 1 }).textContent())!.replace("Request ", "").trim();
+  const reference = (await page.getByRole("heading", { level: 1 }).textContent())!
+    .replace("Request ", "")
+    .trim();
 
   await page.goto("/apply");
   await expect(page.getByRole("link", { name: reference })).toBeVisible();
@@ -122,28 +131,40 @@ test("Journey B: an investigator reviews an assigned case and records findings",
   await expect(page.getByText("Recommendation:").first()).toBeVisible();
 
   // The investigator cannot open a case that is not assigned to them.
-  const res = await page.goto(`/staff/applications/${d.appC.id}`);
-  expect(res?.status()).toBe(404);
+  // (Streaming responses commit a 200 status before rendering, so assert on content.)
+  await page.goto(`/staff/applications/${d.appUnassigned.id}`);
+  await expect(page.getByText("Page not found")).toBeVisible();
+  await expect(page.getByText(d.appUnassigned.reference)).toHaveCount(0);
 });
 
-test("Journey C: an authorised reviewer approves a case and a case manager prepares it for publication", async ({ page }) => {
+test("Journey C: an authorised reviewer approves a case and a case manager prepares it for publication", async ({
+  page,
+}) => {
   const d = data();
   await login(page, "cm2@e2e.test");
   await page.goto(`/staff/applications/${d.appC.id}`);
   await page.locator("summary", { hasText: "Record final decision" }).click();
   await page.getByLabel("Decision", { exact: true }).selectOption("APPROVED");
   await page.getByLabel("Approved amount (₦, if approving)").fill("250000");
-  await page.getByLabel("Reasons (internal record)").fill("Verified need within policy; independent review recommends approval.");
+  await page
+    .getByLabel("Reasons (internal record)")
+    .fill("Verified need within policy; independent review recommends approval.");
   await page.getByRole("button", { name: "Record decision" }).click();
   await expect(page.getByText("Decision recorded and the applicant notified.")).toBeVisible();
 
   await login(page, "cm1@e2e.test");
   await page.goto(`/staff/campaigns/new?application=${d.appC.id}`);
   await page.getByLabel("Public title").fill("Safe accommodation for a family of three");
-  await page.getByLabel("Approved summary").fill("A family in Lagos State lost their rented room to flooding. Support will cover rent and bedding so they can stay together safely.");
+  await page
+    .getByLabel("Approved summary")
+    .fill(
+      "A family in Lagos State lost their rented room to flooding. Support will cover rent and bedding so they can stay together safely.",
+    );
   await page.getByLabel("General location").fill("Ikorodu, Lagos State");
   await page.getByLabel("Requested intervention").fill("Rent paid to the landlord and replacement bedding.");
-  await page.getByLabel("Public verification explanation").fill("Verified by phone, landlord confirmation and an independently reviewed investigation.");
+  await page
+    .getByLabel("Public verification explanation")
+    .fill("Verified by phone, landlord confirmation and an independently reviewed investigation.");
   await page.getByRole("button", { name: "Create draft campaign" }).click();
   await page.waitForURL(/\/staff\/campaigns\/(?!new)/);
   await page.getByRole("button", { name: "Mark ready for publication" }).click();
@@ -161,7 +182,10 @@ test("Journey C: an authorised reviewer approves a case and a case manager prepa
   await expect(page.getByText("Example Close")).toHaveCount(0); // exact community never published
 });
 
-test("Journey D & E: a visitor makes a test-mode contribution confirmed exactly once by webhook", async ({ page, request }) => {
+test("Journey D & E: a visitor makes a test-mode contribution confirmed exactly once by webhook", async ({
+  page,
+  request,
+}) => {
   const d = data();
   await page.context().clearCookies();
   await page.goto("/cases");
@@ -182,11 +206,17 @@ test("Journey D & E: a visitor makes a test-mode contribution confirmed exactly 
 
   // Journey E: a forged webhook is rejected; a genuine duplicate is accepted but changes nothing.
   const raw = JSON.stringify({ event: "charge.success", id: "evt_e2e_replay", data: { reference } });
-  const forged = await request.post("/api/webhooks/sandbox", { data: raw, headers: { "content-type": "application/json", "x-sandbox-signature": "f".repeat(128) } });
+  const forged = await request.post("/api/webhooks/sandbox", {
+    data: raw,
+    headers: { "content-type": "application/json", "x-sandbox-signature": "f".repeat(128) },
+  });
   expect(forged.status()).toBe(401);
   const sig = createHmac("sha512", E2E_ENV.SANDBOX_WEBHOOK_SECRET!).update(raw).digest("hex");
   for (let i = 0; i < 2; i++) {
-    const ok = await request.post("/api/webhooks/sandbox", { data: raw, headers: { "content-type": "application/json", "x-sandbox-signature": sig } });
+    const ok = await request.post("/api/webhooks/sandbox", {
+      data: raw,
+      headers: { "content-type": "application/json", "x-sandbox-signature": sig },
+    });
     expect(ok.status()).toBe(200);
   }
   await page.reload();
@@ -194,7 +224,9 @@ test("Journey D & E: a visitor makes a test-mode contribution confirmed exactly 
   await expect(page.getByText(/₦10,000\s*confirmed/)).toBeVisible();
 });
 
-test("Journey F: a sponsor submits an enquiry and gains access to the sponsorship workflow after review", async ({ page }) => {
+test("Journey F: a sponsor submits an enquiry and gains access to the sponsorship workflow after review", async ({
+  page,
+}) => {
   await login(page, "sponsor@e2e.test");
   await page.goto("/sponsor");
   await page.getByLabel("Organisation name").fill("Fictional Foods Ltd");
@@ -202,7 +234,9 @@ test("Journey F: a sponsor submits an enquiry and gains access to the sponsorshi
   await page.getByLabel(/I am authorised to sign/).check();
   await page.getByRole("button", { name: "Submit for review" }).click();
   await expect(page.getByText("Your organisation is awaiting review")).toBeVisible();
-  await page.getByLabel("Send a general enquiry").fill("We would like to sponsor housing cases in Lagos State.");
+  await page
+    .getByLabel("Send a general enquiry")
+    .fill("We would like to sponsor housing cases in Lagos State.");
   await page.getByRole("button", { name: "Send" }).click();
   await expect(page.getByText("our partnerships team will reply")).toBeVisible();
   await page.goto("/sponsor/cases");
@@ -227,7 +261,9 @@ test("Journey F: a sponsor submits an enquiry and gains access to the sponsorshi
   await expect(page.getByText("Fictional")).toHaveCount(0); // no applicant personal data on sponsor view
 });
 
-test("Journey I: a finance officer cannot approve their own disbursement; a second officer approves it", async ({ page }) => {
+test("Journey I: a finance officer cannot approve their own disbursement; a second officer approves it", async ({
+  page,
+}) => {
   await login(page, "finance1@e2e.test");
   await page.goto("/staff/finance/disbursements");
   await expect(page.getByText("Awaiting another officer")).toBeVisible();
@@ -244,11 +280,15 @@ test("Journey I: a finance officer cannot approve their own disbursement; a seco
   await expect(page.getByText("✓ balanced")).toBeVisible();
 });
 
-test("Journey G: delivery is evidenced, the outcome independently reviewed, and an editor publishes the report", async ({ page }) => {
+test("Journey G: delivery is evidenced, the outcome independently reviewed, and an editor publishes the report", async ({
+  page,
+}) => {
   const d = data();
   await login(page, "cm1@e2e.test");
   await page.goto(`/staff/interventions/${d.interventionG}`);
-  await page.getByLabel("What was delivered, to whom, and in what condition?").fill("Rent paid to the landlord and bedding delivered; the beneficiary confirmed receipt.");
+  await page
+    .getByLabel("What was delivered, to whom, and in what condition?")
+    .fill("Rent paid to the landlord and bedding delivered; the beneficiary confirmed receipt.");
   await page.getByLabel("Delivery date").fill(new Date().toISOString().slice(0, 10));
   await page.getByRole("button", { name: "Record delivery" }).click();
   await expect(page.getByText("Delivery recorded; supporters notified.")).toBeVisible();
@@ -265,18 +305,22 @@ test("Journey G: delivery is evidenced, the outcome independently reviewed, and 
 
   await login(page, "cm2@e2e.test");
   await page.goto(`/staff/interventions/${d.interventionG}`);
-  await page.getByLabel("Verified outcome summary").fill("The family moved into a safe, dry room and confirmed they received the bedding.");
+  await page
+    .getByLabel("Verified outcome summary")
+    .fill("The family moved into a safe, dry room and confirmed they received the bedding.");
   await page.getByRole("button", { name: "Record outcome review" }).click();
   await expect(page.getByText("Outcome review recorded.")).toBeVisible();
 
   await login(page, "editor1@e2e.test");
   await page.goto("/staff/media");
   await page.locator("summary", { hasText: "Draft a new story or update" }).click();
-  await page.getByLabel("Case").selectOption({ label: "Rebuilding after a flood in Ikorodu" });
+  await page.locator("#campaignId").selectOption({ label: "Rebuilding after a flood in Ikorodu" });
   await page.getByLabel("Type").selectOption("COMPLETION_REPORT");
   await page.getByLabel("Channel").selectOption("CAMPAIGN_PAGE");
   await page.getByLabel("Title", { exact: true }).fill("Support delivered");
-  await page.getByLabel("Text", { exact: true }).fill("Rent was paid directly to the landlord and new bedding was delivered.");
+  await page
+    .getByLabel("Text", { exact: true })
+    .fill("Rent was paid directly to the landlord and new bedding was delivered.");
   await page.getByRole("button", { name: "Create draft" }).click();
   await page.waitForURL(/\/staff\/media\/stories\//);
   const storyUrl = page.url();
@@ -323,7 +367,9 @@ test("Journey H: unauthorised users are denied private applicant documents", asy
   await expect(page).toHaveURL(/\/forbidden/);
 });
 
-test("Journey J: a beneficiary withdraws media consent and the publication review workflow is triggered", async ({ page }) => {
+test("Journey J: a beneficiary withdraws media consent and the publication review workflow is triggered", async ({
+  page,
+}) => {
   const d = data();
   await login(page, "applicant.g@e2e.test");
   await page.goto(`/apply/${d.appG.reference}`);

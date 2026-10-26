@@ -10,8 +10,12 @@ import { assertDisposableTestDatabase } from "./safety";
  */
 export async function resetDb() {
   assertDisposableTestDatabase(process.env.DATABASE_URL);
-  const tables = await db.$queryRaw<{ tablename: string }[]>`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('_prisma_migrations', 'ledger_accounts')`;
-  await db.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(", ")} RESTART IDENTITY CASCADE`);
+  const tables = await db.$queryRaw<
+    { tablename: string }[]
+  >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('_prisma_migrations', 'ledger_accounts')`;
+  await db.$executeRawUnsafe(
+    `TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(", ")} RESTART IDENTITY CASCADE`,
+  );
 }
 
 export async function makeUser(roles: Role[], name = `Test ${randomCode(4)}`): Promise<Actor> {
@@ -34,7 +38,9 @@ export async function makeCategory() {
       slug: `cat-${randomCode(5).toLowerCase()}`,
       name: "Emergency accommodation",
       description: "Short-term housing support for people displaced from their homes.",
-      verificationChecklist: [{ key: "landlord_quote", label: "Confirm rent quote with landlord", stage: "REMOTE" }],
+      verificationChecklist: [
+        { key: "landlord_quote", label: "Confirm rent quote with landlord", stage: "REMOTE" },
+      ],
     },
   });
 }

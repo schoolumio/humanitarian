@@ -34,7 +34,12 @@ export function canTransition<S extends string>(
   );
 }
 
-export function assertTransition<S extends string>(entity: string, table: TransitionTable<S>, from: S, to: S) {
+export function assertTransition<S extends string>(
+  entity: string,
+  table: TransitionTable<S>,
+  from: S,
+  to: S,
+) {
   if (!allowedActors(table, from, to)) throw new InvalidTransitionError(entity, from, to);
 }
 

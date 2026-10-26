@@ -35,7 +35,15 @@ export async function registerAction(_: FormState, fd: FormData): Promise<FormSt
   return runAction(async () => {
     const ctx = await requestContext();
     if (str(fd, "password") !== str(fd, "confirmPassword")) throw invalid("The passwords do not match.");
-    await auth.register({ name: str(fd, "name"), email: str(fd, "email"), password: str(fd, "password"), role: str(fd, "role") as "APPLICANT" }, ctx);
+    await auth.register(
+      {
+        name: str(fd, "name"),
+        email: str(fd, "email"),
+        password: str(fd, "password"),
+        role: str(fd, "role") as "APPLICANT",
+      },
+      ctx,
+    );
     return "Thank you. If this email address can be registered, we have sent a confirmation link. You can sign in now; some actions need a confirmed email.";
   });
 }

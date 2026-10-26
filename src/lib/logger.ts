@@ -2,7 +2,8 @@
  * Minimal structured logger (JSON lines), suitable for Vercel / any log drain.
  * Keys that may carry secrets or sensitive personal data are redacted.
  */
-const REDACT = /pass(word)?|token|secret|authorization|cookie|signature|otp|code|narrative|whatHappened|document|card/i;
+const REDACT =
+  /pass(word)?|token|secret|authorization|cookie|signature|otp|code|narrative|whatHappened|document|card/i;
 
 function redact(value: unknown, depth = 0): unknown {
   if (depth > 4 || value === null || typeof value !== "object") {
@@ -19,7 +20,12 @@ type Level = "debug" | "info" | "warn" | "error";
 
 function write(level: Level, msg: string, ctx?: Record<string, unknown>) {
   if (process.env.NODE_ENV === "test" && level !== "error") return;
-  const line = JSON.stringify({ level, msg, time: new Date().toISOString(), ...(redact(ctx ?? {}) as object) });
+  const line = JSON.stringify({
+    level,
+    msg,
+    time: new Date().toISOString(),
+    ...(redact(ctx ?? {}) as object),
+  });
   if (level === "error" || level === "warn") console.error(line);
   else process.stdout.write(line + "\n");
 }

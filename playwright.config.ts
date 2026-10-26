@@ -18,9 +18,7 @@ export default defineConfig({
     trace: "retain-on-failure",
     ...devices["Pixel 7"], // mobile-first: affordable Android viewport
   },
-  projects: [
-    { name: "mobile-chromium", use: { ...devices["Pixel 7"] } },
-  ],
+  projects: [{ name: "mobile-chromium", use: { ...devices["Pixel 7"] } }],
   webServer: {
     command: "npx next start -p 3100",
     url: `${E2E_ENV.APP_BASE_URL}/api/health`,

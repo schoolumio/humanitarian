@@ -50,10 +50,17 @@ describe("passwords, encryption and redaction", () => {
     expect(() => decryptSecret(parts.join("."))).toThrow();
   });
   it("redacts secrets and sensitive narratives from logs", () => {
-    expect(redactForLog({ password: "x", token: "y", whatHappened: "z", ok: 1 })).toEqual({ password: "[redacted]", token: "[redacted]", whatHappened: "[redacted]", ok: 1 });
+    expect(redactForLog({ password: "x", token: "y", whatHappened: "z", ok: 1 })).toEqual({
+      password: "[redacted]",
+      token: "[redacted]",
+      whatHappened: "[redacted]",
+      ok: 1,
+    });
   });
   it("removes card and customer data from provider payloads", () => {
-    const s = sanitizePayload({ data: { amount: 1, authorization: { last4: "4081" }, customer: { email: "e" } } }) as { data: Record<string, unknown> };
+    const s = sanitizePayload({
+      data: { amount: 1, authorization: { last4: "4081" }, customer: { email: "e" } },
+    }) as { data: Record<string, unknown> };
     expect(s.data.authorization).toBe("[removed]");
     expect(s.data.customer).toBe("[removed]");
     expect(s.data.amount).toBe(1);

@@ -31,7 +31,8 @@ export const stepSchemas = {
       .trim()
       .transform((v, ctx) => {
         const n = normaliseNigerianPhone(v);
-        if (!n) ctx.addIssue({ code: "custom", message: "Enter a Nigerian phone number, e.g. 0803 123 4567." });
+        if (!n)
+          ctx.addIssue({ code: "custom", message: "Enter a Nigerian phone number, e.g. 0803 123 4567." });
         return n ?? v;
       }),
     state: z.enum(NIGERIAN_STATES, { message: "Choose your state." }),
@@ -118,10 +119,15 @@ export function submissionProblems(a: SubmissionCheckInput): { step: number; mes
   if (!a.categoryId) p.push({ step: 2, message: "Choose the type of assistance." });
   if (!a.whatHappened || !a.assistanceNeeded)
     p.push({ step: 3, message: "Describe your situation and the help you need." });
-  if (a.budgetItemCount === 0 || !a.requestedAmountMinor) p.push({ step: 4, message: "Add at least one budget item." });
+  if (a.budgetItemCount === 0 || !a.requestedAmountMinor)
+    p.push({ step: 4, message: "Add at least one budget item." });
   if (a.requestedAmountMinor && a.requestedAmountMinor > MAX_REQUEST_MINOR)
-    p.push({ step: 4, message: "The total is above what can be requested online. Please contact us for help." });
-  if (a.contactMethods.length === 0) p.push({ step: 6, message: "Choose at least one safe way to contact you." });
+    p.push({
+      step: 4,
+      message: "The total is above what can be requested online. Please contact us for help.",
+    });
+  if (a.contactMethods.length === 0)
+    p.push({ step: 6, message: "Choose at least one safe way to contact you." });
   if (!a.assessmentConsent)
     p.push({ step: 7, message: "We need your permission to use your information to assess the request." });
   return p;

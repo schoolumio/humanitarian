@@ -25,23 +25,40 @@ export default async function SandboxCheckout({ params }: { params: Promise<{ re
     "use server";
     if (env().PAYMENT_PROVIDER !== "sandbox") return { error: "Sandbox payments are disabled." };
     await sandboxCompleteCheckout(reference, outcome);
-    const { raw, signature } = buildSandboxWebhook(outcome === "success" ? "charge.success" : "charge.failed", { reference });
+    const { raw, signature } = buildSandboxWebhook(
+      outcome === "success" ? "charge.success" : "charge.failed",
+      { reference },
+    );
     // Deliver the webhook over HTTP exactly like a provider would.
-    await fetch(`${env().APP_BASE_URL}/api/webhooks/sandbox`, { method: "POST", headers: { "Content-Type": "application/json", "x-sandbox-signature": signature }, body: raw }).catch(() => undefined);
+    await fetch(`${env().APP_BASE_URL}/api/webhooks/sandbox`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-sandbox-signature": signature },
+      body: raw,
+    }).catch(() => undefined);
     return { ok: true, redirectTo: `/give/return?reference=${reference}` };
   }
 
   return (
     <div className="mx-auto max-w-md">
-      <Alert tone="warning" title="Sandbox payment – no real money moves">This page simulates a payment provider for testing.</Alert>
+      <Alert tone="warning" title="Sandbox payment – no real money moves">
+        This page simulates a payment provider for testing.
+      </Alert>
       <Card className="mt-4">
         <p className="text-sm text-muted">Paying</p>
         <p className="text-3xl font-bold text-teal">{formatMoney(t.amountMinor, t.currency)}</p>
         <p className="mt-1 text-sm">Receipt to {t.email}</p>
         {t.status === "pending" ? (
           <div className="mt-4 flex flex-col gap-2">
-            <ActionForm action={complete.bind(null, "success")}><SubmitButton variant="cta" pendingText="Processing…">Simulate successful payment</SubmitButton></ActionForm>
-            <ActionForm action={complete.bind(null, "failed")}><SubmitButton variant="secondary" pendingText="Processing…">Simulate failed payment</SubmitButton></ActionForm>
+            <ActionForm action={complete.bind(null, "success")}>
+              <SubmitButton variant="cta" pendingText="Processing…">
+                Simulate successful payment
+              </SubmitButton>
+            </ActionForm>
+            <ActionForm action={complete.bind(null, "failed")}>
+              <SubmitButton variant="secondary" pendingText="Processing…">
+                Simulate failed payment
+              </SubmitButton>
+            </ActionForm>
           </div>
         ) : (
           <p className="mt-4">This sandbox transaction is already {t.status}.</p>

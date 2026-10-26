@@ -7,6 +7,8 @@ export function assertDisposableTestDatabase(url: string | undefined) {
   const u = new URL(url);
   const name = u.pathname.replace(/^\//, "");
   if (!["localhost", "127.0.0.1", "postgres"].includes(u.hostname) || !name.endsWith("_test")) {
-    throw new Error(`Refusing to run destructive test setup against ${u.hostname}/${name}. Use a local *_test database.`);
+    throw new Error(
+      `Refusing to run destructive test setup against ${u.hostname}/${name}. Use a local *_test database.`,
+    );
   }
 }

@@ -150,7 +150,12 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 };
 
 /** Roles that only a SUPER_ADMIN may grant or revoke. */
-export const PRIVILEGED_ROLES: readonly Role[] = ["ADMIN", "SUPER_ADMIN", "FINANCE_OFFICER", "SAFEGUARDING_OFFICER"];
+export const PRIVILEGED_ROLES: readonly Role[] = [
+  "ADMIN",
+  "SUPER_ADMIN",
+  "FINANCE_OFFICER",
+  "SAFEGUARDING_OFFICER",
+];
 
 export const STAFF_ROLES: readonly Role[] = [
   "INVESTIGATOR",

@@ -41,7 +41,8 @@ export async function resendVerificationAction(): Promise<FormState> {
 
 export async function deleteAccountAction(_: FormState, fd: FormData): Promise<FormState> {
   const r = await runAction(async () => {
-    if (str(fd, "confirm") !== "DELETE") throw new (await import("@/lib/errors")).AppError("Type DELETE to confirm.", "VALIDATION");
+    if (str(fd, "confirm") !== "DELETE")
+      throw new (await import("@/lib/errors")).AppError("Type DELETE to confirm.", "VALIDATION");
     await deleteOwnAccount(requireActor(await getActor()));
     (await cookies()).delete(SESSION_COOKIE);
   });

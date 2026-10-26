@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/link";
 import type { Permission } from "@/lib/permissions";
 import { Alert } from "@/components/ui";
 import { requirePagePermission } from "@/server/current-user";
@@ -33,7 +33,11 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           <summary className="cursor-pointer p-3 font-semibold text-teal lg:hidden">Staff menu</summary>
           <ul className="flex flex-col p-2">
             {items.map((i) => (
-              <li key={i.href}><Link href={i.href} className="block rounded px-3 py-2 no-underline hover:bg-teal-50">{i.label}</Link></li>
+              <li key={i.href}>
+                <Link href={i.href} className="block rounded px-3 py-2 no-underline hover:bg-teal-50">
+                  {i.label}
+                </Link>
+              </li>
             ))}
           </ul>
         </details>
@@ -42,7 +46,10 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         {!actor.mfaEnabled && (
           <div className="mb-4">
             <Alert tone="warning" title="Two-step verification is not set up">
-              {staffMfaRequired() ? "Sensitive actions are blocked until you set it up." : "Staff should use two-step verification."} <Link href="/account">Set it up now</Link>.
+              {staffMfaRequired()
+                ? "Sensitive actions are blocked until you set it up."
+                : "Staff should use two-step verification."}{" "}
+              <Link href="/account">Set it up now</Link>.
             </Alert>
           </div>
         )}

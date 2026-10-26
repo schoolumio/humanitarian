@@ -1,11 +1,23 @@
 "use client";
 
-import { useActionState, useEffect, useRef, type ReactNode } from "react";
+import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import type { FormState } from "@/server/action";
 import { buttonClass, cx, type ButtonVariant } from "./index";
 
-export function SubmitButton({ children, variant = "primary", className, pendingText = "Saving…", confirm }: { children: ReactNode; variant?: ButtonVariant; className?: string; pendingText?: string; confirm?: string }) {
+export function SubmitButton({
+  children,
+  variant = "primary",
+  className,
+  pendingText = "Saving…",
+  confirm,
+}: {
+  children: ReactNode;
+  variant?: ButtonVariant;
+  className?: string;
+  pendingText?: string;
+  confirm?: string;
+}) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -41,16 +53,28 @@ type Props = {
  * Progressive-enhancement form bound to a server action. Shows a summary of errors (focused
  * for screen readers) and per-field messages via FieldError.
  */
-export function ActionForm({ action, children, className, resetOnSuccess, successMessage, id, autosaveKey }: Props) {
-  const [state, formAction] = useActionState(action, null);
+export function ActionForm({
+  action,
+  children,
+  className,
+  resetOnSuccess,
+  successMessage,
+  id,
+  autosaveKey,
+}: Props) {
+  // After a successful action we always do a full page load (to `redirectTo`, or a reload of
+  // the current page). With Next.js 15 we observed client-router navigations after actions
+  // being dropped during hydration, overwritten by the action's own refresh, and
+  // revalidated data not being applied. A document load is deterministic, always shows
+  // current data, and the confirmation is carried by a short-lived cookie (see <Notice />).
+  const [state, formAction] = useActionState(async (prev: FormState, fd: FormData) => {
+    const result = await action(prev, fd);
+    if (result?.redirectTo) window.location.assign(result.redirectTo);
+    else if (result?.ok) window.location.reload();
+    return result;
+  }, null);
   const ref = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    // A full navigation is used deliberately: a client-router transition started here can be
-    // overwritten by the server action's own refresh of the current page (observed in
-    // Next.js 15), leaving the user on the form. A document load is deterministic.
-    if (state?.redirectTo) window.location.assign(state.redirectTo);
-  }, [state]);
   useEffect(() => {
     if (state?.error) summaryRef.current?.focus();
     if (state?.ok && resetOnSuccess) ref.current?.reset();
@@ -59,15 +83,28 @@ export function ActionForm({ action, children, className, resetOnSuccess, succes
   useEffect(() => {
     const form = ref.current;
     if (!form || !autosaveKey) return;
-    const saved = safeStorage(() => JSON.parse(sessionStorage.getItem(autosaveKey) ?? "{}") as Record<string, string>) ?? {};
+    const saved =
+      safeStorage(() => JSON.parse(sessionStorage.getItem(autosaveKey) ?? "{}") as Record<string, string>) ??
+      {};
     for (const [name, value] of Object.entries(saved)) {
       const el = form.elements.namedItem(name);
-      if ((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && el.type !== "checkbox" && el.type !== "radio" && !el.value) el.value = value;
+      if (
+        (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) &&
+        el.type !== "checkbox" &&
+        el.type !== "radio" &&
+        !el.value
+      )
+        el.value = value;
     }
     const onInput = () => {
       const data: Record<string, string> = {};
       for (const el of Array.from(form.elements)) {
-        if ((el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && ["text", "tel", "number"].includes(el.type))) && el.name) data[el.name] = el.value;
+        if (
+          (el instanceof HTMLTextAreaElement ||
+            (el instanceof HTMLInputElement && ["text", "tel", "number"].includes(el.type))) &&
+          el.name
+        )
+          data[el.name] = el.value;
       }
       safeStorage(() => sessionStorage.setItem(autosaveKey, JSON.stringify(data)));
     };
@@ -77,7 +114,12 @@ export function ActionForm({ action, children, className, resetOnSuccess, succes
   return (
     <form id={id} ref={ref} action={formAction} className={cx("flex flex-col gap-4", className)} noValidate>
       {state?.error && (
-        <div ref={summaryRef} tabIndex={-1} role="alert" className="rounded-md border border-coral/50 bg-coral/10 p-3 text-coral-700">
+        <div
+          ref={summaryRef}
+          tabIndex={-1}
+          role="alert"
+          className="rounded-md border border-coral/50 bg-coral/10 p-3 text-coral-700"
+        >
           <p className="font-semibold">{state.error}</p>
           {state.fieldErrors && Object.keys(state.fieldErrors).length > 0 && (
             <ul className="mt-1 list-disc pl-5 text-sm">
@@ -106,15 +148,27 @@ function safeStorage<T>(fn: () => T): T | undefined {
   }
 }
 
-/** Shows the last action's confirmation at the top of the page, then clears it. */
-export function Notice({ message }: { message: string | null }) {
+/** Page-level confirmation of the last successful action (carried across the page load). */
+export function Notice({ initial }: { initial: string | null }) {
+  const [message, setMessage] = useState(initial);
   useEffect(() => {
-    if (message) document.cookie = "ks_notice=; Max-Age=0; path=/; SameSite=Lax";
-  }, [message]);
-  if (!message) return null;
+    if (initial) document.cookie = "ks_notice=; Max-Age=0; path=/; SameSite=Lax";
+  }, [initial]);
   return (
-    <div role="status" aria-live="polite" className="mb-4 rounded-md border border-teal/30 bg-sage p-3 text-teal">
-      {message}
+    <div role="status" aria-live="polite">
+      {message && (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-teal/30 bg-sage p-3 text-teal">
+          <span>{message}</span>
+          <button
+            type="button"
+            onClick={() => setMessage(null)}
+            className="text-sm underline"
+            aria-label="Dismiss message"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </div>
   );
 }

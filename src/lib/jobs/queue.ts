@@ -17,11 +17,23 @@ export async function enqueueJob(
     if (existing) return existing;
   }
   return tx.backgroundJob.create({
-    data: { type, payload, dedupeKey: opts.dedupeKey, runAt: opts.runAt ?? new Date(), maxAttempts: opts.maxAttempts ?? 5 },
+    data: {
+      type,
+      payload,
+      dedupeKey: opts.dedupeKey,
+      runAt: opts.runAt ?? new Date(),
+      maxAttempts: opts.maxAttempts ?? 5,
+    },
   });
 }
 
-export type ClaimedJob = { id: string; type: string; payload: Prisma.JsonValue; attempts: number; maxAttempts: number };
+export type ClaimedJob = {
+  id: string;
+  type: string;
+  payload: Prisma.JsonValue;
+  attempts: number;
+  maxAttempts: number;
+};
 
 /** Atomically claim due jobs; concurrent runners never receive the same job. Stale locks (>10 min) are reclaimed. */
 export async function claimJobs(limit: number): Promise<ClaimedJob[]> {
@@ -39,7 +51,10 @@ export async function claimJobs(limit: number): Promise<ClaimedJob[]> {
 }
 
 export async function completeJob(id: string) {
-  await db.backgroundJob.update({ where: { id }, data: { status: "SUCCEEDED", finishedAt: new Date(), lockedAt: null, lastError: null } });
+  await db.backgroundJob.update({
+    where: { id },
+    data: { status: "SUCCEEDED", finishedAt: new Date(), lockedAt: null, lastError: null },
+  });
 }
 
 export async function failJob(job: ClaimedJob, error: string) {

@@ -9,8 +9,21 @@ export default async function CompletedPage() {
   const { rows } = await listPublicCampaigns({ status: "completed" });
   return (
     <div>
-      <PageHeader title="Completed interventions" description="Cases where delivery was evidenced and the outcome independently reviewed." />
-      {rows.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{rows.map((c) => <CampaignCard key={c.publicId} c={c} />)}</div> : <EmptyState title="No completed interventions yet">Interventions are listed here only after an outcome review.</EmptyState>}
+      <PageHeader
+        title="Completed interventions"
+        description="Cases where delivery was evidenced and the outcome independently reviewed."
+      />
+      {rows.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((c) => (
+            <CampaignCard key={c.publicId} c={c} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="No completed interventions yet">
+          Interventions are listed here only after an outcome review.
+        </EmptyState>
+      )}
     </div>
   );
 }

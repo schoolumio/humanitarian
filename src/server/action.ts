@@ -1,7 +1,6 @@
 import { ZodError } from "zod";
 import { unstable_rethrow } from "next/navigation";
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
 import { AppError, toSafeMessage } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { InvalidTransitionError } from "@/lib/workflow/machine";
@@ -17,8 +16,7 @@ export type FormState = {
 
 /**
  * Navigate after a successful action. We return the destination instead of calling
- * redirect() inside actions: a server-action redirect can be dropped by the client router
- * when a form is submitted while the page is still hydrating (common on slow phones).
+ * redirect() inside actions; see ActionForm for why navigation is done client-side.
  */
 export function withRedirect(state: FormState, to: string): FormState {
   return state?.ok ? { ...state, redirectTo: to } : state;
@@ -34,10 +32,14 @@ export async function runAction(fn: () => Promise<string | void>): Promise<FormS
   try {
     const message = await fn();
     if (message) {
-      // Page-level confirmation that survives the form unmounting after a state change.
-      // Contains only non-sensitive UI text; read and cleared by <Notice />.
-      (await cookies()).set(NOTICE_COOKIE, encodeURIComponent(message.slice(0, 300)), { path: "/", maxAge: 30, sameSite: "lax", httpOnly: false });
-      revalidatePath("/", "layout"); // re-render the layout so the notice is shown in this response
+      // Confirmation shown after the page reloads; read and cleared by <Notice />.
+      // Contains only non-sensitive UI text.
+      (await cookies()).set(NOTICE_COOKIE, encodeURIComponent(message.slice(0, 300)), {
+        path: "/",
+        maxAge: 30,
+        sameSite: "lax",
+        httpOnly: false,
+      });
     }
     return { ok: true, message: message || undefined };
   } catch (err) {
@@ -60,3 +62,10 @@ export const str = (fd: FormData, key: string) => {
   const v = fd.get(key);
   return typeof v === "string" ? v : "";
 };
+
+/** Signed-in actor for use inside server actions (throws if signed out). */
+export async function currentActor() {
+  const { getActor } = await import("./current-user");
+  const { requireActor } = await import("./actor");
+  return requireActor(await getActor());
+}

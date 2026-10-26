@@ -12,19 +12,31 @@ async function send(_: FormState, fd: FormData): Promise<FormState> {
   "use server";
   const h = await headers();
   return runAction(async () => {
-    await submitContactMessage(Object.fromEntries(fd), { ipHash: hashIp(h.get("x-forwarded-for")?.split(",")[0] ?? null) });
+    await submitContactMessage(Object.fromEntries(fd), {
+      ipHash: hashIp(h.get("x-forwarded-for")?.split(",")[0] ?? null),
+    });
     return "Thank you. We will reply by email.";
   });
 }
 
 export default function ContactPage() {
   return (
-    <ContentPage title="Contact us" intro="Questions, help completing an application, partnerships or media enquiries.">
-      <p>If someone is in immediate danger, call 112. To report a safeguarding concern or make a complaint, use the <a href="/complaints/new">complaints form</a>.</p>
+    <ContentPage
+      title="Contact us"
+      intro="Questions, help completing an application, partnerships or media enquiries."
+    >
+      <p>
+        If someone is in immediate danger, call 112. To report a safeguarding concern or make a complaint, use
+        the <a href="/complaints/new">complaints form</a>.
+      </p>
       <div className="not-prose mt-4 max-w-xl">
         <ActionForm action={send} resetOnSuccess>
-          <Field label="Your name" name="name"><input id="name" name="name" className={inputClass} autoComplete="name" /></Field>
-          <Field label="Email" name="email"><input id="email" name="email" type="email" className={inputClass} autoComplete="email" /></Field>
+          <Field label="Your name" name="name">
+            <input id="name" name="name" className={inputClass} autoComplete="name" />
+          </Field>
+          <Field label="Email" name="email">
+            <input id="email" name="email" type="email" className={inputClass} autoComplete="email" />
+          </Field>
           <Field label="Topic" name="topic">
             <select id="topic" name="topic" className={inputClass}>
               <option value="GENERAL">General question</option>
@@ -35,7 +47,13 @@ export default function ContactPage() {
               <option value="OTHER">Other</option>
             </select>
           </Field>
-          <Field label="Message" name="message" hint="Please do not include sensitive personal information here."><textarea id="message" name="message" rows={5} className={inputClass} /></Field>
+          <Field
+            label="Message"
+            name="message"
+            hint="Please do not include sensitive personal information here."
+          >
+            <textarea id="message" name="message" rows={5} className={inputClass} />
+          </Field>
           <SubmitButton pendingText="Sending…">Send message</SubmitButton>
         </ActionForm>
       </div>

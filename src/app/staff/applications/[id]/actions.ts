@@ -29,21 +29,42 @@ export async function requestInfoAction(id: string, _: FormState, fd: FormData):
 export async function assignAction(id: string, _: FormState, fd: FormData): Promise<FormState> {
   return runAction(async () => {
     const follow = str(fd, "followUpAt");
-    await cases.assignInvestigator(await me(), id, str(fd, "investigatorId"), Number(str(fd, "priority") || 2), follow ? new Date(follow) : null);
+    await cases.assignInvestigator(
+      await me(),
+      id,
+      str(fd, "investigatorId"),
+      Number(str(fd, "priority") || 2),
+      follow ? new Date(follow) : null,
+    );
     return done(id, "Investigator assigned.");
   });
 }
-export async function endAssignmentAction(id: string, assignmentId: string, _: FormState, fd: FormData): Promise<FormState> {
+export async function endAssignmentAction(
+  id: string,
+  assignmentId: string,
+  _: FormState,
+  fd: FormData,
+): Promise<FormState> {
   return runAction(async () => {
     await cases.endAssignment(await me(), assignmentId, str(fd, "reason") || "Reassigned");
     return done(id, "Assignment ended.");
   });
 }
-export async function conflictAction(id: string, assignmentId: string, _: FormState, fd: FormData): Promise<FormState> {
+export async function conflictAction(
+  id: string,
+  assignmentId: string,
+  _: FormState,
+  fd: FormData,
+): Promise<FormState> {
   return runAction(async () => {
     const has = str(fd, "hasConflict") === "yes";
     await cases.declareConflict(await me(), assignmentId, has, str(fd, "details"));
-    return done(id, has ? "Conflict recorded. You have been removed from this case." : "Thank you. You can now work on this case.");
+    return done(
+      id,
+      has
+        ? "Conflict recorded. You have been removed from this case."
+        : "Thank you. You can now work on this case.",
+    );
   });
 }
 export async function taskAction(id: string, taskId: string, _: FormState, fd: FormData): Promise<FormState> {
@@ -64,7 +85,12 @@ export async function fieldVisitRequestAction(id: string, _: FormState, fd: Form
     return done(id, "Field visit requested.");
   });
 }
-export async function fieldVisitUpdateAction(id: string, visitId: string, _: FormState, fd: FormData): Promise<FormState> {
+export async function fieldVisitUpdateAction(
+  id: string,
+  visitId: string,
+  _: FormState,
+  fd: FormData,
+): Promise<FormState> {
   return runAction(async () => {
     const when = str(fd, "scheduledFor");
     await cases.updateFieldVisit(await me(), visitId, {
@@ -85,7 +111,12 @@ export async function reportAction(id: string, _: FormState, fd: FormData): Prom
 }
 export async function reviewAction(id: string, _: FormState, fd: FormData): Promise<FormState> {
   return runAction(async () => {
-    await cases.submitReview(await me(), id, str(fd, "recommendation") as Recommendation, str(fd, "comments"));
+    await cases.submitReview(
+      await me(),
+      id,
+      str(fd, "recommendation") as Recommendation,
+      str(fd, "comments"),
+    );
     return done(id, "Review recorded.");
   });
 }
@@ -103,7 +134,14 @@ export async function reopenAction(id: string, _: FormState, fd: FormData): Prom
 }
 export async function consentOnBehalfAction(id: string, _: FormState, fd: FormData): Promise<FormState> {
   return runAction(async () => {
-    await cases.recordConsentOnBehalf(await me(), id, str(fd, "type") as ConsentType, str(fd, "granted") === "yes", str(fd, "method") as "WRITTEN_FORM", str(fd, "notes"));
+    await cases.recordConsentOnBehalf(
+      await me(),
+      id,
+      str(fd, "type") as ConsentType,
+      str(fd, "granted") === "yes",
+      str(fd, "method") as "WRITTEN_FORM",
+      str(fd, "notes"),
+    );
     return done(id, "Consent recorded.");
   });
 }

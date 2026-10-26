@@ -29,7 +29,11 @@ export function parseMajorToMinor(input: string, currency: CurrencyCode = DEFAUL
   return whole * 10n ** BigInt(minorUnits) + BigInt(frac || "0");
 }
 
-export function formatMoney(minor: bigint | number | string, currency: string = DEFAULT_CURRENCY, opts?: { compact?: boolean }) {
+export function formatMoney(
+  minor: bigint | number | string,
+  currency: string = DEFAULT_CURRENCY,
+  opts?: { compact?: boolean },
+) {
   const code = (isSupportedCurrency(currency) ? currency : DEFAULT_CURRENCY) as CurrencyCode;
   const { minorUnits, locale } = CURRENCIES[code];
   const value = BigInt(minor);
@@ -47,7 +51,9 @@ export function formatMoney(minor: bigint | number | string, currency: string = 
 export function minorToMajorString(minor: bigint, currency: CurrencyCode = DEFAULT_CURRENCY) {
   const divisor = 10n ** BigInt(CURRENCIES[currency].minorUnits);
   const frac = minor % divisor;
-  return frac === 0n ? (minor / divisor).toString() : `${minor / divisor}.${frac.toString().padStart(2, "0")}`;
+  return frac === 0n
+    ? (minor / divisor).toString()
+    : `${minor / divisor}.${frac.toString().padStart(2, "0")}`;
 }
 
 export const sum = (values: Iterable<bigint>) => {

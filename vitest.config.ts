@@ -1,7 +1,10 @@
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 
-const alias = { "server-only": path.resolve(__dirname, "tests/helpers/empty.ts"), "@": path.resolve(__dirname, "src") };
+const alias = {
+  "server-only": path.resolve(__dirname, "tests/helpers/empty.ts"),
+  "@": path.resolve(__dirname, "src"),
+};
 
 export default defineConfig({
   esbuild: { jsx: "automatic" },
@@ -10,7 +13,13 @@ export default defineConfig({
     projects: [
       {
         extends: true,
-        test: { name: "unit", include: ["tests/unit/**/*.test.{ts,tsx}"], environment: "node", alias, setupFiles: ["tests/helpers/unit-setup.ts"] },
+        test: {
+          name: "unit",
+          include: ["tests/unit/**/*.test.{ts,tsx}"],
+          environment: "node",
+          alias,
+          setupFiles: ["tests/helpers/unit-setup.ts"],
+        },
       },
       {
         extends: true,

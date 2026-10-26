@@ -1,6 +1,12 @@
 import type { Prisma } from "@prisma/client";
 import type { Tx } from "../db";
-import { ACCOUNT_BY_CODE, ACCOUNTS, FUND_EXPENSE_CODES, FUND_REVENUE_CODES, type AccountKey } from "./accounts";
+import {
+  ACCOUNT_BY_CODE,
+  ACCOUNTS,
+  FUND_EXPENSE_CODES,
+  FUND_REVENUE_CODES,
+  type AccountKey,
+} from "./accounts";
 
 export type JournalLineInput = {
   account: AccountKey;
@@ -32,7 +38,7 @@ export function validateJournal(input: JournalInput) {
     const d = l.debit ?? 0n;
     const c = l.credit ?? 0n;
     if (d < 0n || c < 0n) throw new UnbalancedJournalError("Journal amounts cannot be negative.");
-    if ((d > 0n) === (c > 0n)) throw new UnbalancedJournalError("Each line must be either a debit or a credit.");
+    if (d > 0n === c > 0n) throw new UnbalancedJournalError("Each line must be either a debit or a credit.");
     const acct = ACCOUNTS[l.account];
     if (acct.restricted && !l.campaignId) {
       throw new UnbalancedJournalError(`Account ${acct.code} is restricted and requires a campaign (fund).`);
@@ -43,7 +49,8 @@ export function validateJournal(input: JournalInput) {
     debits += d;
     credits += c;
   }
-  if (debits !== credits) throw new UnbalancedJournalError(`Journal does not balance: ${debits} != ${credits}`);
+  if (debits !== credits)
+    throw new UnbalancedJournalError(`Journal does not balance: ${debits} != ${credits}`);
 }
 
 /**
@@ -128,6 +135,13 @@ export async function trialBalance(tx: Tx, where: Prisma.JournalLineWhereInput =
     const d = r._sum.debitMinor ?? 0n;
     const c = r._sum.creditMinor ?? 0n;
     const debitNormal = acct.type === "ASSET" || acct.type === "EXPENSE";
-    return { code: acct.code, name: acct.name, type: acct.type, debits: d, credits: c, balance: debitNormal ? d - c : c - d };
+    return {
+      code: acct.code,
+      name: acct.name,
+      type: acct.type,
+      debits: d,
+      credits: c,
+      balance: debitNormal ? d - c : c - d,
+    };
   });
 }

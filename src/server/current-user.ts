@@ -38,7 +38,10 @@ export async function requirePageActor(next?: string): Promise<Actor> {
 }
 
 /** For pages: render 403 page when lacking permission. */
-export async function requirePagePermission(permission: Permission | Permission[], next?: string): Promise<Actor> {
+export async function requirePagePermission(
+  permission: Permission | Permission[],
+  next?: string,
+): Promise<Actor> {
   const actor = await requirePageActor(next);
   const list = Array.isArray(permission) ? permission : [permission];
   if (!list.some((p) => actor.permissions.has(p))) redirect("/forbidden");

@@ -18,7 +18,11 @@ export function paymentProvider(name?: string): PaymentProvider {
 /** Whether real money can be collected. Requires explicit sign-off (see docs/launch-checklist.md). */
 export function isLiveMoneyEnabled() {
   const e = env();
-  return e.PAYMENT_PROVIDER === "paystack" && e.PAYMENTS_LIVE_MODE_APPROVED === "true" && !!e.PAYSTACK_SECRET_KEY?.startsWith("sk_live_");
+  return (
+    e.PAYMENT_PROVIDER === "paystack" &&
+    e.PAYMENTS_LIVE_MODE_APPROVED === "true" &&
+    !!e.PAYSTACK_SECRET_KEY?.startsWith("sk_live_")
+  );
 }
 
 export function paymentModeLabel() {

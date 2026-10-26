@@ -5,7 +5,10 @@ import { SiteFooter, SiteHeader } from "@/components/layout/site";
 import { Notice } from "@/components/ui/form";
 
 export const metadata: Metadata = {
-  title: { default: "KindSpring – Real People. Verified Needs. Lasting Change.", template: "%s · KindSpring" },
+  title: {
+    default: "KindSpring – Real People. Verified Needs. Lasting Change.",
+    template: "%s · KindSpring",
+  },
   description:
     "KindSpring connects people with verified humanitarian needs in Nigeria with individuals, businesses and foundations who want to help. Every case is investigated before it is published.",
 };
@@ -25,12 +28,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en-NG">
       <body className="flex min-h-screen flex-col font-sans">
-        <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:p-2">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:p-2"
+        >
           Skip to main content
         </a>
         <SiteHeader />
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
-          <Notice message={notice} />
+          <Notice initial={notice} />
           {children}
         </main>
         <SiteFooter />

@@ -44,7 +44,11 @@ const schema = z
   })
   .superRefine((env, ctx) => {
     if (env.PAYMENT_PROVIDER === "paystack" && !env.PAYSTACK_SECRET_KEY) {
-      ctx.addIssue({ code: "custom", path: ["PAYSTACK_SECRET_KEY"], message: "required when PAYMENT_PROVIDER=paystack" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["PAYSTACK_SECRET_KEY"],
+        message: "required when PAYMENT_PROVIDER=paystack",
+      });
     }
     if (
       env.PAYMENT_PROVIDER === "paystack" &&
@@ -54,11 +58,20 @@ const schema = z
       ctx.addIssue({
         code: "custom",
         path: ["PAYSTACK_SECRET_KEY"],
-        message: "live Paystack key supplied but PAYMENTS_LIVE_MODE_APPROVED is not 'true' (see docs/launch-checklist.md)",
+        message:
+          "live Paystack key supplied but PAYMENTS_LIVE_MODE_APPROVED is not 'true' (see docs/launch-checklist.md)",
       });
     }
-    if (env.PAYMENT_PROVIDER === "sandbox" && env.NODE_ENV === "production" && env.PAYMENTS_LIVE_MODE_APPROVED === "true") {
-      ctx.addIssue({ code: "custom", path: ["PAYMENT_PROVIDER"], message: "sandbox provider cannot be used in live mode" });
+    if (
+      env.PAYMENT_PROVIDER === "sandbox" &&
+      env.NODE_ENV === "production" &&
+      env.PAYMENTS_LIVE_MODE_APPROVED === "true"
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["PAYMENT_PROVIDER"],
+        message: "sandbox provider cannot be used in live mode",
+      });
     }
     if (env.STORAGE_DRIVER === "s3") {
       for (const k of [
@@ -73,19 +86,35 @@ const schema = z
     // Real deployments (served over HTTPS in production) must not use development-only drivers.
     const realDeployment = env.NODE_ENV === "production" && env.APP_BASE_URL.startsWith("https://");
     if (realDeployment && env.STORAGE_DRIVER === "local") {
-      ctx.addIssue({ code: "custom", path: ["STORAGE_DRIVER"], message: "local storage is for development only; use s3 in deployed environments" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["STORAGE_DRIVER"],
+        message: "local storage is for development only; use s3 in deployed environments",
+      });
     }
     if (realDeployment && env.MALWARE_SCAN_MODE !== "external") {
-      ctx.addIssue({ code: "custom", path: ["MALWARE_SCAN_MODE"], message: "deployed environments must use an external malware scanner (see docs/security.md)" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["MALWARE_SCAN_MODE"],
+        message: "deployed environments must use an external malware scanner (see docs/security.md)",
+      });
     }
     if (env.MALWARE_SCAN_MODE === "external" && !process.env.SCAN_WEBHOOK_SECRET) {
-      ctx.addIssue({ code: "custom", path: ["SCAN_WEBHOOK_SECRET"], message: "required when MALWARE_SCAN_MODE=external" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["SCAN_WEBHOOK_SECRET"],
+        message: "required when MALWARE_SCAN_MODE=external",
+      });
     }
     if (realDeployment && !env.CRON_SECRET) {
       ctx.addIssue({ code: "custom", path: ["CRON_SECRET"], message: "required in deployed environments" });
     }
     if (env.EMAIL_PROVIDER === "resend" && !env.RESEND_API_KEY) {
-      ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "required when EMAIL_PROVIDER=resend" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["RESEND_API_KEY"],
+        message: "required when EMAIL_PROVIDER=resend",
+      });
     }
   });
 

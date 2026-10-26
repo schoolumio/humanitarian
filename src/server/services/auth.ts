@@ -48,9 +48,24 @@ export async function register(input: z.input<typeof registerSchema>, ctx: { ipH
   const passwordHash = await hashPassword(data.password);
   const user = await db.$transaction(async (tx) => {
     const u = await tx.user.create({
-      data: { name: data.name, email: data.email, passwordHash, roles: { create: [{ role: data.role as Role }] } },
+      data: {
+        name: data.name,
+        email: data.email,
+        passwordHash,
+        roles: { create: [{ role: data.role as Role }] },
+      },
     });
-    await audit({ actorId: u.id, action: "user.register", entityType: "User", entityId: u.id, metadata: { role: data.role }, ipHash: ctx.ipHash }, tx);
+    await audit(
+      {
+        actorId: u.id,
+        action: "user.register",
+        entityType: "User",
+        entityId: u.id,
+        metadata: { role: data.role },
+        ipHash: ctx.ipHash,
+      },
+      tx,
+    );
     return u;
   });
   await sendVerificationEmail(user.id);
@@ -64,7 +79,12 @@ export async function sendVerificationEmail(userId: string) {
   const token = randomToken(32);
   await db.$transaction(async (tx) => {
     await tx.emailToken.create({
-      data: { userId, purpose: "VERIFY_EMAIL", tokenHash: sha256Hex(token), expiresAt: new Date(Date.now() + 24 * 3600e3) },
+      data: {
+        userId,
+        purpose: "VERIFY_EMAIL",
+        tokenHash: sha256Hex(token),
+        expiresAt: new Date(Date.now() + 24 * 3600e3),
+      },
     });
     await notify(tx, {
       userId,
@@ -85,7 +105,10 @@ export async function verifyEmail(token: string) {
   await db.$transaction(async (tx) => {
     await tx.emailToken.update({ where: { id: record.id }, data: { usedAt: new Date() } });
     await tx.user.update({ where: { id: record.userId }, data: { emailVerifiedAt: new Date() } });
-    await audit({ actorId: record.userId, action: "user.verify_email", entityType: "User", entityId: record.userId }, tx);
+    await audit(
+      { actorId: record.userId, action: "user.verify_email", entityType: "User", entityId: record.userId },
+      tx,
+    );
   });
 }
 
@@ -104,7 +127,9 @@ export async function login(
     throw unauthenticated(GENERIC_LOGIN_ERROR);
   }
   if (user.lockedUntil && user.lockedUntil > new Date()) {
-    throw unauthenticated("This account is temporarily locked after repeated failed sign-ins. Try again later or reset your password.");
+    throw unauthenticated(
+      "This account is temporarily locked after repeated failed sign-ins. Try again later or reset your password.",
+    );
   }
   const ok = await verifyPassword(user.passwordHash, input.password);
   if (!ok) {
@@ -116,14 +141,29 @@ export async function login(
         lockedUntil: failed >= LOCK_THRESHOLD ? new Date(Date.now() + LOCK_MINUTES * 60e3) : null,
       },
     });
-    await audit({ actorId: user.id, action: "user.login_failed", entityType: "User", entityId: user.id, ipHash: ctx.ipHash });
+    await audit({
+      actorId: user.id,
+      action: "user.login_failed",
+      entityType: "User",
+      entityId: user.id,
+      ipHash: ctx.ipHash,
+    });
     throw unauthenticated(GENERIC_LOGIN_ERROR);
   }
-  await db.user.update({ where: { id: user.id }, data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() } });
+  await db.user.update({
+    where: { id: user.id },
+    data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date() },
+  });
   await clearRateLimit(`login-email:${sha256Hex(email)}`);
   const staff = isStaff(user.roles.map((r) => r.role));
   const session = await createSession(user.id, { staff, userAgent: ctx.userAgent, ipHash: ctx.ipHash });
-  await audit({ actorId: user.id, action: "user.login", entityType: "User", entityId: user.id, ipHash: ctx.ipHash });
+  await audit({
+    actorId: user.id,
+    action: "user.login",
+    entityType: "User",
+    entityId: user.id,
+    ipHash: ctx.ipHash,
+  });
   return { ...session, mfaRequired: !!user.mfaEnabledAt, userId: user.id, staff };
 }
 
@@ -135,9 +175,17 @@ export async function requestPasswordReset(emailInput: string, ctx: { ipHash: st
   if (!user || user.status !== "ACTIVE") return null; // same response either way
   const token = randomToken(32);
   await db.$transaction(async (tx) => {
-    await tx.emailToken.updateMany({ where: { userId: user.id, purpose: "RESET_PASSWORD", usedAt: null }, data: { usedAt: new Date() } });
+    await tx.emailToken.updateMany({
+      where: { userId: user.id, purpose: "RESET_PASSWORD", usedAt: null },
+      data: { usedAt: new Date() },
+    });
     await tx.emailToken.create({
-      data: { userId: user.id, purpose: "RESET_PASSWORD", tokenHash: sha256Hex(token), expiresAt: new Date(Date.now() + 3600e3) },
+      data: {
+        userId: user.id,
+        purpose: "RESET_PASSWORD",
+        tokenHash: sha256Hex(token),
+        expiresAt: new Date(Date.now() + 3600e3),
+      },
     });
     await notify(tx, {
       userId: user.id,
@@ -151,7 +199,10 @@ export async function requestPasswordReset(emailInput: string, ctx: { ipHash: st
 }
 
 export async function resetPassword(token: string, newPassword: string) {
-  const record = await db.emailToken.findUnique({ where: { tokenHash: sha256Hex(token) }, include: { user: true } });
+  const record = await db.emailToken.findUnique({
+    where: { tokenHash: sha256Hex(token) },
+    include: { user: true },
+  });
   if (!record || record.purpose !== "RESET_PASSWORD" || record.usedAt || record.expiresAt < new Date()) {
     throw invalid("This reset link is invalid or has expired. Please request a new one.");
   }
@@ -163,16 +214,25 @@ export async function resetPassword(token: string, newPassword: string) {
     await tx.user.update({
       where: { id: record.userId },
       // Completing a reset proves control of the mailbox.
-      data: { passwordHash, failedLoginCount: 0, lockedUntil: null, emailVerifiedAt: record.user.emailVerifiedAt ?? new Date() },
+      data: {
+        passwordHash,
+        failedLoginCount: 0,
+        lockedUntil: null,
+        emailVerifiedAt: record.user.emailVerifiedAt ?? new Date(),
+      },
     });
-    await audit({ actorId: record.userId, action: "user.password_reset", entityType: "User", entityId: record.userId }, tx);
+    await audit(
+      { actorId: record.userId, action: "user.password_reset", entityType: "User", entityId: record.userId },
+      tx,
+    );
   });
   await invalidateAllUserSessions(record.userId);
 }
 
 export async function changePassword(actor: Actor, current: string, next: string) {
   const user = await db.user.findUniqueOrThrow({ where: { id: actor.userId } });
-  if (!(await verifyPassword(user.passwordHash, current))) throw invalid("Your current password is incorrect.");
+  if (!(await verifyPassword(user.passwordHash, current)))
+    throw invalid("Your current password is incorrect.");
   const problem = passwordProblem(next, user.email);
   if (problem) throw invalid(problem);
   await db.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(next) } });
@@ -193,9 +253,11 @@ export async function beginMfaSetup(actor: Actor) {
 export async function confirmMfaSetup(actor: Actor, code: string) {
   const user = await db.user.findUniqueOrThrow({ where: { id: actor.userId } });
   if (!user.mfaSecretEnc || user.mfaEnabledAt) throw invalid("Start two-step verification setup first.");
-  if (!verifyTotp(decryptSecret(user.mfaSecretEnc), code.trim())) throw invalid("That code is not correct. Check your authenticator app's time and try again.");
+  if (!verifyTotp(decryptSecret(user.mfaSecretEnc), code.trim()))
+    throw invalid("That code is not correct. Check your authenticator app's time and try again.");
   await db.user.update({ where: { id: user.id }, data: { mfaEnabledAt: new Date() } });
-  if (actor.sessionId) await db.session.update({ where: { id: actor.sessionId }, data: { mfaVerifiedAt: new Date() } });
+  if (actor.sessionId)
+    await db.session.update({ where: { id: actor.sessionId }, data: { mfaVerifiedAt: new Date() } });
   await audit({ actorId: user.id, action: "user.mfa_enabled", entityType: "User", entityId: user.id });
 }
 
@@ -216,6 +278,16 @@ export async function verifyMfaForSession(actor: { userId: string; sessionId: st
 /** Let a signed-in user add another self-service role (e.g. a donor who also needs help). */
 export async function addSelfServiceRole(actor: Actor, role: (typeof SELF_SERVICE_ROLES)[number]) {
   if (!SELF_SERVICE_ROLES.includes(role)) throw invalid("That role cannot be added here.");
-  await db.userRole.upsert({ where: { userId_role: { userId: actor.userId, role } }, create: { userId: actor.userId, role }, update: {} });
-  await audit({ actorId: actor.userId, action: "role.self_add", entityType: "User", entityId: actor.userId, metadata: { role } });
+  await db.userRole.upsert({
+    where: { userId_role: { userId: actor.userId, role } },
+    create: { userId: actor.userId, role },
+    update: {},
+  });
+  await audit({
+    actorId: actor.userId,
+    action: "role.self_add",
+    entityType: "User",
+    entityId: actor.userId,
+    metadata: { role },
+  });
 }

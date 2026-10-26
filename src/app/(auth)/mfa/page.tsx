@@ -15,12 +15,25 @@ export default async function MfaPage({ searchParams }: { searchParams: Promise<
   return (
     <div className="mx-auto max-w-md">
       <h1 className="mb-2 text-3xl">Two-step verification</h1>
-      <p className="mb-4 text-muted">{pending ? "Enter the 6-digit code from your authenticator app to finish signing in." : "This action needs you to confirm your identity again. Enter the 6-digit code from your authenticator app."}</p>
+      <p className="mb-4 text-muted">
+        {pending
+          ? "Enter the 6-digit code from your authenticator app to finish signing in."
+          : "This action needs you to confirm your identity again. Enter the 6-digit code from your authenticator app."}
+      </p>
       <Card>
         <ActionForm action={mfaChallengeAction}>
           <input type="hidden" name="next" value={next} />
           <Field label="6-digit code" name="code">
-            <input id="code" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required className={inputClass} />
+            <input
+              id="code"
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              className={inputClass}
+            />
           </Field>
           <SubmitButton pendingText="Checking…">Verify</SubmitButton>
         </ActionForm>

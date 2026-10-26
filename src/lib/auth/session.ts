@@ -7,12 +7,21 @@ export const SESSION_TTL_MS = 7 * DAY;
 export const STAFF_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 export const STEP_UP_VALIDITY_MS = 12 * 60 * 60 * 1000;
 
-export async function createSession(userId: string, opts: { staff: boolean; userAgent?: string | null; ipHash?: string | null }) {
+export async function createSession(
+  userId: string,
+  opts: { staff: boolean; userAgent?: string | null; ipHash?: string | null },
+) {
   const token = randomToken(32);
   const ttl = opts.staff ? STAFF_SESSION_TTL_MS : SESSION_TTL_MS;
   const expiresAt = new Date(Date.now() + ttl);
   await db.session.create({
-    data: { id: sha256Hex(token), userId, expiresAt, userAgent: opts.userAgent?.slice(0, 300), ipHash: opts.ipHash },
+    data: {
+      id: sha256Hex(token),
+      userId,
+      expiresAt,
+      userAgent: opts.userAgent?.slice(0, 300),
+      ipHash: opts.ipHash,
+    },
   });
   return { token, expiresAt };
 }
@@ -35,7 +44,8 @@ export async function validateSessionToken(token: string) {
   return session;
 }
 
-export const invalidateSessionToken = (token: string) => db.session.deleteMany({ where: { id: sha256Hex(token) } });
+export const invalidateSessionToken = (token: string) =>
+  db.session.deleteMany({ where: { id: sha256Hex(token) } });
 export const invalidateAllUserSessions = (userId: string) => db.session.deleteMany({ where: { userId } });
 
 export function sessionCookieOptions(expiresAt: Date) {

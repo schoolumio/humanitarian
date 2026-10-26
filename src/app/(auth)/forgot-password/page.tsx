@@ -12,7 +12,14 @@ export default function ForgotPasswordPage() {
       <Card>
         <ActionForm action={forgotPasswordAction} resetOnSuccess>
           <Field label="Email address" name="email">
-            <input id="email" name="email" type="email" autoComplete="email" required className={inputClass} />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              className={inputClass}
+            />
           </Field>
           <SubmitButton pendingText="Sending…">Send reset link</SubmitButton>
         </ActionForm>

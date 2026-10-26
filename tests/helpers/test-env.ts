@@ -1,7 +1,8 @@
 /** Fictional, test-only configuration. No real credentials. */
 export const TEST_ENV = {
   NODE_ENV: "test",
-  DATABASE_URL: process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/kindspring_test",
+  DATABASE_URL:
+    process.env.TEST_DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/kindspring_test",
   APP_BASE_URL: "http://localhost:3100",
   AUTH_SECRET: "test-auth-secret-0123456789abcdef0123456789",
   DATA_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),

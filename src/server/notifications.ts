@@ -10,7 +10,13 @@ import { renderTemplate, type TemplateName } from "@/lib/email/templates";
  */
 export async function notify(
   tx: Tx,
-  input: { userId?: string | null; to: string; template: TemplateName; params: Record<string, string>; dedupeKey: string },
+  input: {
+    userId?: string | null;
+    to: string;
+    template: TemplateName;
+    params: Record<string, string>;
+    dedupeKey: string;
+  },
 ) {
   const existing = await tx.notification.findUnique({ where: { dedupeKey: input.dedupeKey } });
   if (existing) return existing;
@@ -33,7 +39,10 @@ export async function notifyRole(
   role: "CASE_MANAGER" | "FINANCE_OFFICER" | "SAFEGUARDING_OFFICER" | "MEDIA_EDITOR" | "ADMIN",
   input: { title: string; body: string; path?: string; dedupeKey: string },
 ) {
-  const holders = await tx.userRole.findMany({ where: { role, user: { status: "ACTIVE" } }, include: { user: true } });
+  const holders = await tx.userRole.findMany({
+    where: { role, user: { status: "ACTIVE" } },
+    include: { user: true },
+  });
   for (const h of holders) {
     await notify(tx, {
       userId: h.userId,
@@ -49,17 +58,35 @@ export async function notifyRole(
 export async function sendNotification(notificationId: string) {
   const n = await db.notification.findUnique({ where: { id: notificationId } });
   if (!n || n.status === "SENT_TO_PROVIDER" || n.status === "DELIVERED") return;
-  const rendered = renderTemplate(n.template as TemplateName, n.params as Record<string, string>, env().APP_BASE_URL);
+  const rendered = renderTemplate(
+    n.template as TemplateName,
+    n.params as Record<string, string>,
+    env().APP_BASE_URL,
+  );
   try {
-    const result = await emailProvider().send({ to: n.toEmail, ...rendered, idempotencyKey: `notification-${n.id}` });
+    const result = await emailProvider().send({
+      to: n.toEmail,
+      ...rendered,
+      idempotencyKey: `notification-${n.id}`,
+    });
     await db.notification.update({
       where: { id: n.id },
-      data: { status: "SENT_TO_PROVIDER", providerMessageId: result.providerMessageId, sentAt: new Date(), attempts: { increment: 1 }, lastError: null },
+      data: {
+        status: "SENT_TO_PROVIDER",
+        providerMessageId: result.providerMessageId,
+        sentAt: new Date(),
+        attempts: { increment: 1 },
+        lastError: null,
+      },
     });
   } catch (err) {
     await db.notification.update({
       where: { id: n.id },
-      data: { status: "FAILED", attempts: { increment: 1 }, lastError: err instanceof Error ? err.message.slice(0, 500) : "error" },
+      data: {
+        status: "FAILED",
+        attempts: { increment: 1 },
+        lastError: err instanceof Error ? err.message.slice(0, 500) : "error",
+      },
     });
     throw err;
   }

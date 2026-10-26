@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/link";
 import type { ComponentProps, ReactNode } from "react";
 
 export function cx(...parts: (string | false | null | undefined)[]) {
@@ -23,19 +23,40 @@ export function buttonClass(variant: ButtonVariant = "primary", extra?: string) 
   );
 }
 
-export function Button({ variant = "primary", className, ...props }: ComponentProps<"button"> & { variant?: ButtonVariant }) {
+export function Button({
+  variant = "primary",
+  className,
+  ...props
+}: ComponentProps<"button"> & { variant?: ButtonVariant }) {
   return <button className={buttonClass(variant, className)} {...props} />;
 }
 
-export function ButtonLink({ variant = "primary", className, ...props }: ComponentProps<typeof Link> & { variant?: ButtonVariant }) {
+export function ButtonLink({
+  variant = "primary",
+  className,
+  ...props
+}: ComponentProps<typeof Link> & { variant?: ButtonVariant }) {
   return <Link className={buttonClass(variant, className)} {...props} />;
 }
 
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return <div className={cx("rounded-[var(--radius-card)] border border-line bg-white p-5", className)} {...props} />;
+  return (
+    <div
+      className={cx("rounded-[var(--radius-card)] border border-line bg-white p-5", className)}
+      {...props}
+    />
+  );
 }
 
-export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+}: {
+  title: string;
+  description?: ReactNode;
+  actions?: ReactNode;
+}) {
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -59,10 +80,22 @@ export type Tone = keyof typeof tones;
 
 /** Status badges always carry text (never colour alone). */
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
-  return <span className={cx("inline-block rounded border px-2 py-0.5 text-sm font-medium", tones[tone])}>{children}</span>;
+  return (
+    <span className={cx("inline-block rounded border px-2 py-0.5 text-sm font-medium", tones[tone])}>
+      {children}
+    </span>
+  );
 }
 
-export function Alert({ tone = "info", title, children }: { tone?: Tone; title?: string; children?: ReactNode }) {
+export function Alert({
+  tone = "info",
+  title,
+  children,
+}: {
+  tone?: Tone;
+  title?: string;
+  children?: ReactNode;
+}) {
   return (
     <div role={tone === "danger" ? "alert" : "status"} className={cx("rounded-md border p-4", tones[tone])}>
       {title && <p className="font-semibold">{title}</p>}
@@ -71,7 +104,15 @@ export function Alert({ tone = "info", title, children }: { tone?: Tone; title?:
   );
 }
 
-export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
+export function EmptyState({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children?: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-white p-8 text-center">
       <p className="text-lg font-semibold text-teal">{title}</p>
@@ -81,7 +122,17 @@ export function EmptyState({ title, children, action }: { title: string; childre
   );
 }
 
-export function Stat({ label, value, href, hint }: { label: string; value: ReactNode; href?: string; hint?: string }) {
+export function Stat({
+  label,
+  value,
+  href,
+  hint,
+}: {
+  label: string;
+  value: ReactNode;
+  href?: string;
+  hint?: string;
+}) {
   const body = (
     <>
       <span className="block text-sm text-muted">{label}</span>
@@ -90,7 +141,10 @@ export function Stat({ label, value, href, hint }: { label: string; value: React
     </>
   );
   return href ? (
-    <Link href={href} className="block rounded-[var(--radius-card)] border border-line bg-white p-4 no-underline hover:border-teal">
+    <Link
+      href={href}
+      className="block rounded-[var(--radius-card)] border border-line bg-white p-4 no-underline hover:border-teal"
+    >
       {body}
     </Link>
   ) : (
@@ -102,21 +156,52 @@ export function Stat({ label, value, href, hint }: { label: string; value: React
 export function Progress({ percent, label }: { percent: number; label: string }) {
   return (
     <div>
-      <div className="h-3 w-full overflow-hidden rounded-full bg-sage" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={label}>
+      <div
+        className="h-3 w-full overflow-hidden rounded-full bg-sage"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+        aria-label={label}
+      >
         <div className="h-full rounded-full bg-teal" style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
 }
 
-export function Pagination({ page, pageSize, total, hrefFor }: { page: number; pageSize: number; total: number; hrefFor: (p: number) => string }) {
+export function Pagination({
+  page,
+  pageSize,
+  total,
+  hrefFor,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  hrefFor: (p: number) => string;
+}) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   if (pages <= 1) return null;
   return (
     <nav aria-label="Pagination" className="mt-6 flex items-center justify-between gap-2">
-      {page > 1 ? <Link className={buttonClass("secondary")} href={hrefFor(page - 1)}>Previous</Link> : <span />}
-      <span className="text-sm text-muted">Page {page} of {pages}</span>
-      {page < pages ? <Link className={buttonClass("secondary")} href={hrefFor(page + 1)}>Next</Link> : <span />}
+      {page > 1 ? (
+        <Link className={buttonClass("secondary")} href={hrefFor(page - 1)}>
+          Previous
+        </Link>
+      ) : (
+        <span />
+      )}
+      <span className="text-sm text-muted">
+        Page {page} of {pages}
+      </span>
+      {page < pages ? (
+        <Link className={buttonClass("secondary")} href={hrefFor(page + 1)}>
+          Next
+        </Link>
+      ) : (
+        <span />
+      )}
     </nav>
   );
 }
@@ -151,9 +236,15 @@ export function DataTable<T>({
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={rowKey(r)} className="block border-t border-line p-3 first:border-t-0 md:table-row md:p-0">
+            <tr
+              key={rowKey(r)}
+              className="block border-t border-line p-3 first:border-t-0 md:table-row md:p-0"
+            >
               {columns.map((c) => (
-                <td key={c.header} className={cx("flex gap-2 py-1 md:table-cell md:px-3 md:py-2 md:align-top", c.className)}>
+                <td
+                  key={c.header}
+                  className={cx("flex gap-2 py-1 md:table-cell md:px-3 md:py-2 md:align-top", c.className)}
+                >
                   <span className="w-32 shrink-0 text-sm text-muted md:hidden">{c.header}</span>
                   <span className="min-w-0 break-words">{c.cell(r)}</span>
                 </td>
@@ -166,13 +257,29 @@ export function DataTable<T>({
   );
 }
 
-export function Field({ label, name, hint, error, children }: { label: string; name: string; hint?: ReactNode; error?: string; children: ReactNode }) {
+export function Field({
+  label,
+  name,
+  hint,
+  error,
+  children,
+}: {
+  label: string;
+  name: string;
+  hint?: ReactNode;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={name} className="font-semibold">
         {label}
       </label>
-      {hint && <p id={`${name}-hint`} className="text-sm text-muted">{hint}</p>}
+      {hint && (
+        <p id={`${name}-hint`} className="text-sm text-muted">
+          {hint}
+        </p>
+      )}
       {children}
       {error && (
         <p id={`${name}-error`} className="text-sm font-medium text-coral-700">
@@ -213,7 +320,11 @@ export function Section({ title, children, id }: { title: string; children: Reac
 export function formatDate(d: Date | string | null | undefined, withTime = false) {
   if (!d) return "—";
   const date = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("en-NG", { dateStyle: "medium", ...(withTime ? { timeStyle: "short" } : {}), timeZone: "Africa/Lagos" }).format(date);
+  return new Intl.DateTimeFormat("en-NG", {
+    dateStyle: "medium",
+    ...(withTime ? { timeStyle: "short" } : {}),
+    timeZone: "Africa/Lagos",
+  }).format(date);
 }
 
 export function humanize(s: string) {

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { allocateProportionally, bpsOf, formatMoney, minorToMajorString, parseMajorToMinor, progressPercent, sum } from "@/lib/money";
+import {
+  allocateProportionally,
+  bpsOf,
+  formatMoney,
+  minorToMajorString,
+  parseMajorToMinor,
+  progressPercent,
+  sum,
+} from "@/lib/money";
 
 describe("money (NGN, integer kobo)", () => {
   it("parses naira strings into kobo without floating point", () => {
@@ -9,7 +17,8 @@ describe("money (NGN, integer kobo)", () => {
     expect(parseMajorToMinor("19.99")).toBe(1999n);
   });
   it("rejects invalid and over-precise input", () => {
-    for (const bad of ["", "abc", "-5", "1.234", "1e5", "12,34.5.6"]) expect(parseMajorToMinor(bad)).toBeNull();
+    for (const bad of ["", "abc", "-5", "1.234", "1e5", "12,34.5.6"])
+      expect(parseMajorToMinor(bad)).toBeNull();
   });
   it("formats with the naira symbol", () => {
     expect(formatMoney(2_500_000n)).toBe("₦25,000");

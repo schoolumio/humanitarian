@@ -1,7 +1,13 @@
 import { env } from "../env";
 import { logger } from "../logger";
 
-export type OutgoingEmail = { to: string; subject: string; text: string; html: string; idempotencyKey: string };
+export type OutgoingEmail = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+  idempotencyKey: string;
+};
 export type SendResult = { providerMessageId: string | null };
 
 export interface EmailProvider {
@@ -28,7 +34,13 @@ const resendProvider: EmailProvider = {
         "Content-Type": "application/json",
         "Idempotency-Key": msg.idempotencyKey.slice(0, 256),
       },
-      body: JSON.stringify({ from: env().EMAIL_FROM_ADDRESS, to: [msg.to], subject: msg.subject, text: msg.text, html: msg.html }),
+      body: JSON.stringify({
+        from: env().EMAIL_FROM_ADDRESS,
+        to: [msg.to],
+        subject: msg.subject,
+        text: msg.text,
+        html: msg.html,
+      }),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) throw new Error(`Resend responded ${res.status}`);

@@ -2,15 +2,30 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { fundBalance, trialBalance } from "@/lib/ledger/journal";
 import { buildSandboxWebhook, sandboxCompleteCheckout } from "@/lib/payments/sandbox";
-import { processWebhook, reconcilePaymentByReference, initiateDonation, getReturnStatus, applyVerifiedTransaction, recordOfflineReceipt, confirmOfflineReceipt } from "@/server/services/payments";
-import { approveRefund, requestRefund, submitRefundToProvider, rejectRefund } from "@/server/services/refunds";
+import {
+  processWebhook,
+  reconcilePaymentByReference,
+  initiateDonation,
+  getReturnStatus,
+  applyVerifiedTransaction,
+  recordOfflineReceipt,
+  confirmOfflineReceipt,
+} from "@/server/services/payments";
+import {
+  approveRefund,
+  requestRefund,
+  submitRefundToProvider,
+  rejectRefund,
+} from "@/server/services/refunds";
 import { financialSummary } from "@/server/services/reports";
 import { makeUser, resetDb } from "../helpers/factory";
 import { publishedCampaign } from "../helpers/scenario";
 import { donate, key, payAndNotify, sendWebhook } from "../helpers/payments";
 
 async function expectLedgerBalanced() {
-  const rows = await db.$queryRaw<{ entryId: string; d: bigint; c: bigint }[]>`SELECT "entryId", SUM("debitMinor") d, SUM("creditMinor") c FROM journal_lines GROUP BY "entryId" HAVING SUM("debitMinor") <> SUM("creditMinor")`;
+  const rows = await db.$queryRaw<
+    { entryId: string; d: bigint; c: bigint }[]
+  >`SELECT "entryId", SUM("debitMinor") d, SUM("creditMinor") c FROM journal_lines GROUP BY "entryId" HAVING SUM("debitMinor") <> SUM("creditMinor")`;
   expect(rows).toEqual([]);
 }
 
@@ -29,8 +44,12 @@ describe("payments, webhooks and the ledger", () => {
     const first = await payAndNotify(p.reference, "success", "evt_1");
     expect(first).toEqual({ status: 200, outcome: "APPLIED" });
     // Exact replay of the same event, and a second distinct delivery, are both no-ops.
-    expect((await sendWebhook("charge.success", { reference: p.reference }, "evt_1")).outcome).toBe("DUPLICATE");
-    expect((await sendWebhook("charge.success", { reference: p.reference }, "evt_2")).outcome).toBe("IGNORED_DUPLICATE");
+    expect((await sendWebhook("charge.success", { reference: p.reference }, "evt_1")).outcome).toBe(
+      "DUPLICATE",
+    );
+    expect((await sendWebhook("charge.success", { reference: p.reference }, "evt_2")).outcome).toBe(
+      "IGNORED_DUPLICATE",
+    );
     // A delayed, out-of-order failure after success is ignored.
     expect((await sendWebhook("charge.failed", { reference: p.reference }, "evt_3")).status).toBe(200);
 
@@ -51,11 +70,15 @@ describe("payments, webhooks and the ledger", () => {
     const p = await donate(campaign.publicId, "1000");
     await sandboxCompleteCheckout(p.reference, "success");
     const { raw } = buildSandboxWebhook("charge.success", { reference: p.reference });
-    expect((await processWebhook("sandbox", raw, new Headers({ "x-sandbox-signature": "0".repeat(128) }))).status).toBe(401);
+    expect(
+      (await processWebhook("sandbox", raw, new Headers({ "x-sandbox-signature": "0".repeat(128) }))).status,
+    ).toBe(401);
     expect((await processWebhook("sandbox", raw, new Headers())).status).toBe(401);
     const tampered = raw.replace(p.reference, "ksp_" + "a".repeat(24));
     const { signature } = buildSandboxWebhook("x", {});
-    expect((await processWebhook("sandbox", tampered, new Headers({ "x-sandbox-signature": signature }))).status).toBe(401);
+    expect(
+      (await processWebhook("sandbox", tampered, new Headers({ "x-sandbox-signature": signature }))).status,
+    ).toBe(401);
     expect((await db.payment.findUniqueOrThrow({ where: { id: p.id } })).status).toBe("PENDING");
   });
 
@@ -74,7 +97,9 @@ describe("payments, webhooks and the ledger", () => {
     await sandboxCompleteCheckout(p.reference, "success", { amountOverrideMinor: 100n });
     const r = await sendWebhook("charge.success", { reference: p.reference });
     expect(r.outcome).toBe("REJECTED_MISMATCH");
-    expect((await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } })).confirmedAmountMinor).toBe(0n);
+    expect((await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } })).confirmedAmountMinor).toBe(
+      0n,
+    );
     expect(await db.riskAlert.count({ where: { type: "PAYMENT_AMOUNT_MISMATCH" } })).toBe(1);
   });
 
@@ -82,17 +107,33 @@ describe("payments, webhooks and the ledger", () => {
     const { campaign } = await publishedCampaign();
     const p = await donate(campaign.publicId, "20000");
     await sandboxCompleteCheckout(p.reference, "success");
-    const results = await Promise.all(Array.from({ length: 5 }, (_, i) => sendWebhook("charge.success", { reference: p.reference }, `evt_c${i}`)));
+    const results = await Promise.all(
+      Array.from({ length: 5 }, (_, i) =>
+        sendWebhook("charge.success", { reference: p.reference }, `evt_c${i}`),
+      ),
+    );
     expect(results.filter((r) => r.outcome === "APPLIED")).toHaveLength(1);
-    expect((await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } })).confirmedAmountMinor).toBe(2_000_000n);
+    expect((await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } })).confirmedAmountMinor).toBe(
+      2_000_000n,
+    );
     await expectLedgerBalanced();
   });
 
   it("is idempotent per client key and caps contributions at the remaining need (overfunding)", async () => {
     const { campaign } = await publishedCampaign();
     const k = key();
-    const a = await initiateDonation(null, campaign.publicId, { amount: "1000", email: "d@example.test", name: "Donor", idempotencyKey: k }, { ipHash: "ip1" });
-    const b = await initiateDonation(null, campaign.publicId, { amount: "1000", email: "d@example.test", name: "Donor", idempotencyKey: k }, { ipHash: "ip1" });
+    const a = await initiateDonation(
+      null,
+      campaign.publicId,
+      { amount: "1000", email: "d@example.test", name: "Donor", idempotencyKey: k },
+      { ipHash: "ip1" },
+    );
+    const b = await initiateDonation(
+      null,
+      campaign.publicId,
+      { amount: "1000", email: "d@example.test", name: "Donor", idempotencyKey: k },
+      { ipHash: "ip1" },
+    );
     expect(b.reference).toBe(a.reference);
     await expect(donate(campaign.publicId, "400001")).rejects.toThrow(/needs/);
     await expect(donate(campaign.publicId, "50")).rejects.toThrow(/minimum/);
@@ -104,7 +145,9 @@ describe("payments, webhooks and the ledger", () => {
     await payAndNotify(p2.reference);
     const c = await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } });
     expect(c.status).toBe("FULLY_FUNDED");
-    expect(await db.riskAlert.count({ where: { type: "OVERFUNDED_CAMPAIGN", campaignId: campaign.id } })).toBe(1);
+    expect(
+      await db.riskAlert.count({ where: { type: "OVERFUNDED_CAMPAIGN", campaignId: campaign.id } }),
+    ).toBe(1);
     await expect(donate(campaign.publicId, "1000")).rejects.toThrow(/not currently accepting/);
   });
 
@@ -138,13 +181,19 @@ describe("payments, webhooks and the ledger", () => {
     const f2 = await makeUser(["FINANCE_OFFICER"], "Finance Two");
     const admin = await makeUser(["ADMIN", "SUPER_ADMIN"]);
 
-    await expect(requestRefund(f1, p.id, "50000", "Donor asked for a refund within policy")).rejects.toThrow(/exceeds/);
+    await expect(requestRefund(f1, p.id, "50000", "Donor asked for a refund within policy")).rejects.toThrow(
+      /exceeds/,
+    );
     const r = await requestRefund(f1, p.id, "15000", "Donor asked for a refund within policy");
     await expect(approveRefund(f1, r.id)).rejects.toThrow(/different finance officer/);
     await expect(approveRefund(admin, r.id)).rejects.toThrow(/permission/);
     await approveRefund(f2, r.id);
     await submitRefundToProvider(r.id); // sandbox processes synchronously
-    await sendWebhook("refund.processed", { reference: p.reference, refundId: `sbx_rf_${r.id}`, amount: "1500000" }); // duplicate notification
+    await sendWebhook("refund.processed", {
+      reference: p.reference,
+      refundId: `sbx_rf_${r.id}`,
+      amount: "1500000",
+    }); // duplicate notification
 
     const pay = await db.payment.findUniqueOrThrow({ where: { id: p.id } });
     expect(pay.status).toBe("PARTIALLY_REFUNDED");
@@ -173,7 +222,9 @@ describe("payments, webhooks and the ledger", () => {
     await sendWebhook("dispute.lost", { reference: p.reference, disputeId: "d1", amount: "1000000" });
     const pay = await db.payment.findUniqueOrThrow({ where: { id: p.id } });
     expect(pay.status).toBe("REFUNDED");
-    expect((await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } })).refundedAmountMinor).toBe(1_000_000n);
+    expect((await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } })).refundedAmountMinor).toBe(
+      1_000_000n,
+    );
     await expectLedgerBalanced();
   });
 
@@ -181,18 +232,51 @@ describe("payments, webhooks and the ledger", () => {
     const { campaign } = await publishedCampaign();
     const f1 = await makeUser(["FINANCE_OFFICER"]);
     const f2 = await makeUser(["FINANCE_OFFICER"]);
-    const org = await db.organisation.create({ data: { name: "Fictional Foods Ltd", contactEmail: "csr@fictional.test", status: "APPROVED" } });
-    const ag = await db.sponsorshipAgreement.create({ data: { organisationId: org.id, campaignId: campaign.id, pledgedAmountMinor: 10_000_000n, terms: "x".repeat(50), status: "SIGNED", preparedById: f1.userId } });
-    expect((await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } })).confirmedAmountMinor).toBe(0n); // pledge ≠ money
-    const p = await recordOfflineReceipt(f1, { agreementId: ag.id, amount: "100000", bankReference: "TRF-0001", receivedOn: "2026-10-01" });
+    const org = await db.organisation.create({
+      data: { name: "Fictional Foods Ltd", contactEmail: "csr@fictional.test", status: "APPROVED" },
+    });
+    const ag = await db.sponsorshipAgreement.create({
+      data: {
+        organisationId: org.id,
+        campaignId: campaign.id,
+        pledgedAmountMinor: 10_000_000n,
+        terms: "x".repeat(50),
+        status: "SIGNED",
+        preparedById: f1.userId,
+      },
+    });
+    expect((await db.campaign.findUniqueOrThrow({ where: { id: campaign.id } })).confirmedAmountMinor).toBe(
+      0n,
+    ); // pledge ≠ money
+    const p = await recordOfflineReceipt(f1, {
+      agreementId: ag.id,
+      amount: "100000",
+      bankReference: "TRF-0001",
+      receivedOn: "2026-10-01",
+    });
     await expect(confirmOfflineReceipt(f1, p.id)).rejects.toThrow(/different finance officer/);
     await confirmOfflineReceipt(f2, p.id);
-    expect((await db.sponsorshipAgreement.findUniqueOrThrow({ where: { id: ag.id } })).status).toBe("FULFILLED");
+    expect((await db.sponsorshipAgreement.findUniqueOrThrow({ where: { id: ag.id } })).status).toBe(
+      "FULFILLED",
+    );
     const tb = await trialBalance(db);
     expect(tb.find((r) => r.code === "4010")?.balance).toBe(10_000_000n);
   });
 
   it("applyVerifiedTransaction ignores unknown references", async () => {
-    expect(await applyVerifiedTransaction({ reference: "ksp_unknown", status: "success", amountMinor: 1n, currency: "NGN", feeMinor: 0n, providerTransactionId: "x", paidAt: null }, "test")).toBe("IGNORED_UNKNOWN");
+    expect(
+      await applyVerifiedTransaction(
+        {
+          reference: "ksp_unknown",
+          status: "success",
+          amountMinor: 1n,
+          currency: "NGN",
+          feeMinor: 0n,
+          providerTransactionId: "x",
+          paidAt: null,
+        },
+        "test",
+      ),
+    ).toBe("IGNORED_UNKNOWN");
   });
 });

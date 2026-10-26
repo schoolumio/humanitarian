@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/link";
 import type { Metadata } from "next";
 import { Alert } from "@/components/ui";
 import { verifyEmail } from "@/server/services/auth";
@@ -7,7 +7,11 @@ import { toSafeMessage } from "@/lib/errors";
 export const metadata: Metadata = { title: "Confirm email" };
 export const dynamic = "force-dynamic";
 
-export default async function VerifyEmailPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
+export default async function VerifyEmailPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string }>;
+}) {
   const { token } = await searchParams;
   let error: string | null = null;
   try {
@@ -19,7 +23,9 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
   return (
     <div className="mx-auto max-w-md">
       {error ? (
-        <Alert tone="danger" title="We could not confirm your email">{error}</Alert>
+        <Alert tone="danger" title="We could not confirm your email">
+          {error}
+        </Alert>
       ) : (
         <Alert tone="success" title="Your email address is confirmed">
           <Link href="/account">Continue to your account</Link>

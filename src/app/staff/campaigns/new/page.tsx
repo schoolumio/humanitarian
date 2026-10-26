@@ -10,10 +10,17 @@ import { createCampaign } from "@/server/services/campaigns";
 
 export const metadata = { title: "Prepare campaign" };
 
-export default async function NewCampaign({ searchParams }: { searchParams: Promise<{ application?: string }> }) {
+export default async function NewCampaign({
+  searchParams,
+}: {
+  searchParams: Promise<{ application?: string }>;
+}) {
   await requirePagePermission("campaign.manage");
   const { application = "" } = await searchParams;
-  const app = await db.application.findUnique({ where: { id: application }, include: { budgetItems: true, decisions: { orderBy: { createdAt: "desc" }, take: 1 } } });
+  const app = await db.application.findUnique({
+    where: { id: application },
+    include: { budgetItems: true, decisions: { orderBy: { createdAt: "desc" }, take: 1 } },
+  });
   if (!app || app.status !== "APPROVED") notFound();
 
   async function create(_: FormState, fd: FormData): Promise<FormState> {
@@ -27,8 +34,23 @@ export default async function NewCampaign({ searchParams }: { searchParams: Prom
 
   return (
     <div className="max-w-3xl">
-      <PageHeader title={`Prepare campaign for ${app.reference}`} description={`Approved amount: ${app.decisions[0]?.approvedAmountMinor ? formatMoney(app.decisions[0].approvedAmountMinor) : "—"}`} />
-      <Card><CampaignForm action={create} lines={app.budgetItems.map((b, i) => ({ id: b.id, campaignId: "", description: `${b.quantity} × ${b.description}`, amountMinor: b.unitCostMinor * BigInt(b.quantity), sortOrder: i }))} submitLabel="Create draft campaign" /></Card>
+      <PageHeader
+        title={`Prepare campaign for ${app.reference}`}
+        description={`Approved amount: ${app.decisions[0]?.approvedAmountMinor ? formatMoney(app.decisions[0].approvedAmountMinor) : "—"}`}
+      />
+      <Card>
+        <CampaignForm
+          action={create}
+          lines={app.budgetItems.map((b, i) => ({
+            id: b.id,
+            campaignId: "",
+            description: `${b.quantity} × ${b.description}`,
+            amountMinor: b.unitCostMinor * BigInt(b.quantity),
+            sortOrder: i,
+          }))}
+          submitLabel="Create draft campaign"
+        />
+      </Card>
     </div>
   );
 }

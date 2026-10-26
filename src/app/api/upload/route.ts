@@ -23,7 +23,19 @@ export async function POST(request: Request) {
     });
     return Response.json({ file: record });
   } catch (err) {
-    const status = err instanceof AppError ? ({ FORBIDDEN: 403, NOT_FOUND: 404, UNAUTHENTICATED: 401, RATE_LIMITED: 429, CONFLICT: 409, VALIDATION: 400 } as const)[err.code] : 500;
+    const status =
+      err instanceof AppError
+        ? (
+            {
+              FORBIDDEN: 403,
+              NOT_FOUND: 404,
+              UNAUTHENTICATED: 401,
+              RATE_LIMITED: 429,
+              CONFLICT: 409,
+              VALIDATION: 400,
+            } as const
+          )[err.code]
+        : 500;
     return Response.json({ error: toSafeMessage(err) }, { status });
   }
 }

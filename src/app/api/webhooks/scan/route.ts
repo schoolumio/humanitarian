@@ -12,7 +12,9 @@ export async function POST(request: Request) {
   const secret = process.env.SCAN_WEBHOOK_SECRET;
   const auth = request.headers.get("authorization") ?? "";
   if (!secret || !safeEqual(auth, `Bearer ${secret}`)) return new Response("Unauthorized", { status: 401 });
-  const body = z.object({ fileId: z.string().min(1), clean: z.boolean() }).safeParse(await request.json().catch(() => null));
+  const body = z
+    .object({ fileId: z.string().min(1), clean: z.boolean() })
+    .safeParse(await request.json().catch(() => null));
   if (!body.success) return new Response("Bad request", { status: 400 });
   try {
     await recordScanResult(body.data.fileId, body.data.clean);

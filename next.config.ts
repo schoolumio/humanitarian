@@ -20,7 +20,10 @@ const nextConfig: NextConfig = {
     return [
       { source: "/:path*", headers: securityHeaders },
       // Private, user-specific pages and APIs must never be cached by shared caches.
-      { source: "/(apply|donor|sponsor|staff|account|api)/:path*", headers: [{ key: "Cache-Control", value: "private, no-store" }] },
+      {
+        source: "/(apply|donor|sponsor|staff|account|api)/:path*",
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
     ];
   },
 };

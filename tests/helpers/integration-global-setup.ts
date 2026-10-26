@@ -6,9 +6,14 @@ import { assertDisposableTestDatabase } from "./safety";
 export default function setup() {
   assertDisposableTestDatabase(TEST_ENV.DATABASE_URL);
   try {
-    execSync("npx prisma migrate deploy", { stdio: "pipe", env: { ...process.env, DATABASE_URL: TEST_ENV.DATABASE_URL } });
+    execSync("npx prisma migrate deploy", {
+      stdio: "pipe",
+      env: { ...process.env, DATABASE_URL: TEST_ENV.DATABASE_URL },
+    });
   } catch (e) {
     const err = e as { stdout?: Buffer; stderr?: Buffer };
-    throw new Error(`prisma migrate deploy failed:\n${err.stdout?.toString() ?? ""}\n${err.stderr?.toString() ?? ""}`);
+    throw new Error(
+      `prisma migrate deploy failed:\n${err.stdout?.toString() ?? ""}\n${err.stderr?.toString() ?? ""}`,
+    );
   }
 }

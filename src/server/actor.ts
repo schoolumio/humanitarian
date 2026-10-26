@@ -18,14 +18,17 @@ export type Actor = {
   ipHash?: string | null;
 };
 
-export function buildActor(user: {
-  id: string;
-  email: string;
-  name: string;
-  emailVerifiedAt: Date | null;
-  mfaEnabledAt: Date | null;
-  roles: { role: Role }[];
-}, session?: { id: string; mfaVerifiedAt: Date | null; ipHash?: string | null }): Actor {
+export function buildActor(
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    emailVerifiedAt: Date | null;
+    mfaEnabledAt: Date | null;
+    roles: { role: Role }[];
+  },
+  session?: { id: string; mfaVerifiedAt: Date | null; ipHash?: string | null },
+): Actor {
   const roles = user.roles.map((r) => r.role);
   return {
     userId: user.id,
@@ -78,7 +81,8 @@ export function requireAnyPermission(actor: Actor | null, permissions: Permissio
 export function requireStepUp(a: Actor) {
   const needed = a.mfaEnabled || staffMfaRequired();
   if (!needed) return;
-  if (!a.mfaEnabled) throw forbidden("This action requires two-step verification. Set it up from your account page.");
+  if (!a.mfaEnabled)
+    throw forbidden("This action requires two-step verification. Set it up from your account page.");
   if (!a.mfaVerifiedAt || Date.now() - a.mfaVerifiedAt.getTime() > STEP_UP_VALIDITY_MS) {
     throw forbidden("Please confirm your identity with your authenticator code to continue.");
   }

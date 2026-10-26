@@ -35,7 +35,17 @@ describe("applications and verification", () => {
     const a = await makeUser(["APPLICANT"]);
     const d = await apps.createDraft(a);
     await expect(apps.saveStep(a, d.reference, 1, { fullName: "X", phone: "123" })).rejects.toThrow();
-    await apps.saveStep(a, d.reference, 1, { fullName: "Valid Name", phone: "08030000002", state: "Oyo", lga: "Ibadan North", community: "Somewhere", householdSize: "2", status: "APPROVED", applicantId: "attacker", riskLevel: "LOW" });
+    await apps.saveStep(a, d.reference, 1, {
+      fullName: "Valid Name",
+      phone: "08030000002",
+      state: "Oyo",
+      lga: "Ibadan North",
+      community: "Somewhere",
+      householdSize: "2",
+      status: "APPROVED",
+      applicantId: "attacker",
+      riskLevel: "LOW",
+    });
     const row = await db.application.findUniqueOrThrow({ where: { reference: d.reference } });
     expect(row.status).toBe("DRAFT");
     expect(row.applicantId).toBe(a.userId);
@@ -44,7 +54,9 @@ describe("applications and verification", () => {
   it("refuses submission without assessment consent, but never requires evidence", async () => {
     const a = await makeUser(["APPLICANT"]);
     const d = await apps.createDraft(a);
-    await expect(apps.submitApplication(a, d.reference)).rejects.toThrow(/permission to use your information|Complete your details/);
+    await expect(apps.submitApplication(a, d.reference)).rejects.toThrow(
+      /permission to use your information|Complete your details/,
+    );
   });
 
   it("flags possible duplicates for human review without blocking", async () => {
@@ -69,18 +81,30 @@ describe("applications and verification", () => {
     expect((await cases.listCases(otherInv, {})).total).toBe(0);
     await cases.transitionCase(cm, app.id, "VERIFICATION_IN_PROGRESS", "Verify");
     const task = await db.verificationTask.findFirstOrThrow({ where: { applicationId: app.id } });
-    await expect(cases.updateTask(inv, app.id, task.id, "DONE", "ok")).rejects.toThrow(/conflict of interest/);
+    await expect(cases.updateTask(inv, app.id, task.id, "DONE", "ok")).rejects.toThrow(
+      /conflict of interest/,
+    );
     const asg = await db.investigatorAssignment.findFirstOrThrow({ where: { applicationId: app.id } });
     await cases.declareConflict(inv, asg.id, false, "");
     await cases.updateTask(inv, app.id, task.id, "DONE", "Spoke to applicant");
     await cases.addNote(inv, app.id, "Restricted observation", true);
-    await cases.submitInvestigationReport(inv, app.id, { summary: "Visited and confirmed.", findings: "Need confirmed by landlord.", recommendation: "APPROVE" });
+    await cases.submitInvestigationReport(inv, app.id, {
+      summary: "Visited and confirmed.",
+      findings: "Need confirmed by landlord.",
+      recommendation: "APPROVE",
+    });
     // Investigator notes marked restricted are hidden from investigators without that permission.
     const invView = await cases.getCaseForStaff(inv, app.id);
     expect(invView.notes.some((n) => n.restricted)).toBe(false);
     const cmView = await cases.getCaseForStaff(cm, app.id);
     expect(cmView.notes.some((n) => n.restricted)).toBe(true);
-    await expect(cases.decideCase(inv, app.id, { decision: "APPROVED", reasonInternal: "x".repeat(20), approvedAmount: "1" })).rejects.toThrow(/permission/);
+    await expect(
+      cases.decideCase(inv, app.id, {
+        decision: "APPROVED",
+        reasonInternal: "x".repeat(20),
+        approvedAmount: "1",
+      }),
+    ).rejects.toThrow(/permission/);
   });
 
   it("Journey C: approval requires independent review and a different decision maker", async () => {
@@ -91,17 +115,42 @@ describe("applications and verification", () => {
     await cases.transitionCase(cm1, app.id, "INITIAL_REVIEW", "Start");
     await cases.assignInvestigator(cm1, app.id, inv.userId, 2);
     await cases.transitionCase(cm1, app.id, "VERIFICATION_IN_PROGRESS", "Verify");
-    for (const t of await db.verificationTask.findMany({ where: { applicationId: app.id } })) await cases.updateTask(cm1, app.id, t.id, "DONE", "Checked");
-    await cases.submitInvestigationReport(inv, app.id, { summary: "Summary text", findings: "Findings text", recommendation: "APPROVE" });
-    await expect(cases.submitReview(inv, app.id, "APPROVE", "I investigated this myself")).rejects.toThrow(/independent reviewer/);
+    for (const t of await db.verificationTask.findMany({ where: { applicationId: app.id } }))
+      await cases.updateTask(cm1, app.id, t.id, "DONE", "Checked");
+    await cases.submitInvestigationReport(inv, app.id, {
+      summary: "Summary text",
+      findings: "Findings text",
+      recommendation: "APPROVE",
+    });
+    await expect(cases.submitReview(inv, app.id, "APPROVE", "I investigated this myself")).rejects.toThrow(
+      /independent reviewer/,
+    );
     await cases.submitReview(cm1, app.id, "APPROVE", "Evidence is consistent.");
     await cases.transitionCase(cm1, app.id, "PENDING_APPROVAL", "Ready");
-    await expect(cases.decideCase(cm1, app.id, { decision: "APPROVED", reasonInternal: "Approve the case now", approvedAmount: "400000" })).rejects.toThrow(/independent reviewer/);
-    await expect(cases.decideCase(inv, app.id, { decision: "APPROVED", reasonInternal: "Approve the case now", approvedAmount: "400000" })).rejects.toThrow(/investigator/);
-    await cases.decideCase(cm2, app.id, { decision: "APPROVED", reasonInternal: "Verified and within policy.", approvedAmount: "400000" });
+    await expect(
+      cases.decideCase(cm1, app.id, {
+        decision: "APPROVED",
+        reasonInternal: "Approve the case now",
+        approvedAmount: "400000",
+      }),
+    ).rejects.toThrow(/independent reviewer/);
+    await expect(
+      cases.decideCase(inv, app.id, {
+        decision: "APPROVED",
+        reasonInternal: "Approve the case now",
+        approvedAmount: "400000",
+      }),
+    ).rejects.toThrow(/investigator/);
+    await cases.decideCase(cm2, app.id, {
+      decision: "APPROVED",
+      reasonInternal: "Verified and within policy.",
+      approvedAmount: "400000",
+    });
     const row = await db.application.findUniqueOrThrow({ where: { id: app.id } });
     expect(row.status).toBe("APPROVED");
-    const hist = await db.statusHistory.findFirstOrThrow({ where: { entityId: app.id, toStatus: "APPROVED" } });
+    const hist = await db.statusHistory.findFirstOrThrow({
+      where: { entityId: app.id, toStatus: "APPROVED" },
+    });
     expect(hist.actorId).toBe(cm2.userId);
     expect(hist.fromStatus).toBe("PENDING_APPROVAL");
   });
@@ -116,11 +165,22 @@ describe("applications and verification", () => {
     const s = await approvedCase();
     const other = await submittedApplication();
     await cases.transitionCase(s.cm1, other.app.id, "INITIAL_REVIEW", "Start");
-    await expect(cases.decideCase(s.cm1, other.app.id, { decision: "DECLINED", reasonInternal: "Outside current scope." })).rejects.toThrow();
-    await cases.decideCase(s.cm1, other.app.id, { decision: "DECLINED", reasonInternal: "Outside current scope.", reasonForApplicant: "This need falls outside the categories we can currently fund." });
+    await expect(
+      cases.decideCase(s.cm1, other.app.id, {
+        decision: "DECLINED",
+        reasonInternal: "Outside current scope.",
+      }),
+    ).rejects.toThrow();
+    await cases.decideCase(s.cm1, other.app.id, {
+      decision: "DECLINED",
+      reasonInternal: "Outside current scope.",
+      reasonForApplicant: "This need falls outside the categories we can currently fund.",
+    });
     const view = await apps.getOwnApplication(other.applicant, other.app.reference);
     expect(view.decision?.reasonForApplicant).toMatch(/outside/);
     await cases.reopenCase(s.cm2, other.app.id, "New evidence received from the applicant.");
-    expect((await db.application.findUniqueOrThrow({ where: { id: other.app.id } })).status).toBe("INITIAL_REVIEW");
+    expect((await db.application.findUniqueOrThrow({ where: { id: other.app.id } })).status).toBe(
+      "INITIAL_REVIEW",
+    );
   });
 });

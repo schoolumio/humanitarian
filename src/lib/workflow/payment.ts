@@ -17,7 +17,8 @@ export const PAYMENT_TRANSITIONS: Record<PaymentStatus, readonly PaymentStatus[]
   REFUNDED: [],
 };
 
-export const canMovePayment = (from: PaymentStatus, to: PaymentStatus) => PAYMENT_TRANSITIONS[from].includes(to);
+export const canMovePayment = (from: PaymentStatus, to: PaymentStatus) =>
+  PAYMENT_TRANSITIONS[from].includes(to);
 
 /** Statuses whose amount counts toward confirmed (gross) funding. */
 export const CONFIRMED_PAYMENT_STATUSES: readonly PaymentStatus[] = [

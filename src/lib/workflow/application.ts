@@ -70,12 +70,18 @@ export const OPEN_REVIEW_STATUSES: readonly ApplicationStatus[] = [
 
 /** Plain-language status for applicants (no internal detail). */
 export const APPLICANT_STATUS_TEXT: Record<ApplicationStatus, { label: string; explanation: string }> = {
-  DRAFT: { label: "Draft", explanation: "Your request has not been submitted yet. You can continue where you left off." },
+  DRAFT: {
+    label: "Draft",
+    explanation: "Your request has not been submitted yet. You can continue where you left off.",
+  },
   SUBMITTED: {
     label: "Submitted",
     explanation: "We have received your request. A member of our team will begin an initial review.",
   },
-  INITIAL_REVIEW: { label: "Initial review", explanation: "Our team is reviewing your request and the information you sent." },
+  INITIAL_REVIEW: {
+    label: "Initial review",
+    explanation: "Our team is reviewing your request and the information you sent.",
+  },
   ADDITIONAL_INFORMATION_REQUIRED: {
     label: "More information needed",
     explanation: "We need a little more information before we can continue. Please see the request below.",
@@ -86,15 +92,22 @@ export const APPLICANT_STATUS_TEXT: Record<ApplicationStatus, { label: string; e
   },
   FIELD_VISIT_REQUIRED: {
     label: "Visit being arranged",
-    explanation: "A KindSpring investigator may arrange a visit. We will contact you first using the methods you chose.",
+    explanation:
+      "A KindSpring investigator may arrange a visit. We will contact you first using the methods you chose.",
   },
-  PENDING_APPROVAL: { label: "Awaiting decision", explanation: "Verification is complete and your request is awaiting a decision." },
+  PENDING_APPROVAL: {
+    label: "Awaiting decision",
+    explanation: "Verification is complete and your request is awaiting a decision.",
+  },
   APPROVED: {
     label: "Approved",
     explanation:
       "Your request has been approved for support. Approval does not guarantee funding. We will keep you informed about next steps.",
   },
-  DECLINED: { label: "Not approved", explanation: "We were not able to approve this request. See the explanation below." },
+  DECLINED: {
+    label: "Not approved",
+    explanation: "We were not able to approve this request. See the explanation below.",
+  },
   WITHDRAWN: { label: "Withdrawn", explanation: "This request was withdrawn." },
   CLOSED: { label: "Closed", explanation: "This request is closed." },
 };

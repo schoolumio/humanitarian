@@ -9,9 +9,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
   try {
     const url = await getDownloadUrl(await getActor(), id);
-    return new Response(null, { status: 302, headers: { Location: url, "Cache-Control": "private, no-store" } });
+    return new Response(null, {
+      status: 302,
+      headers: { Location: url, "Cache-Control": "private, no-store" },
+    });
   } catch (err) {
-    const status = err instanceof AppError ? (err.code === "UNAUTHENTICATED" ? 401 : err.code === "CONFLICT" ? 409 : 404) : 500;
+    const status =
+      err instanceof AppError
+        ? err.code === "UNAUTHENTICATED"
+          ? 401
+          : err.code === "CONFLICT"
+            ? 409
+            : 404
+        : 500;
     return Response.json({ error: toSafeMessage(err) }, { status });
   }
 }

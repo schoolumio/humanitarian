@@ -4,5 +4,8 @@ import { db } from "../src/lib/db";
 
 runDueJobs(100)
   .then((r) => console.log(JSON.stringify(r)))
-  .catch((e) => { console.error(e); process.exitCode = 1; })
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
   .finally(() => db.$disconnect());

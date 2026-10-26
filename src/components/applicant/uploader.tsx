@@ -5,7 +5,17 @@ import { useRouter } from "next/navigation";
 import { buttonClass } from "@/components/ui";
 
 /** Uploads one file at a time to /api/upload (private storage) and refreshes the page. */
-export function Uploader({ purpose, applicationId, label = "Upload a file", onUploaded }: { purpose: string; applicationId?: string; label?: string; onUploaded?: (id: string) => void }) {
+export function Uploader({
+  purpose,
+  applicationId,
+  label = "Upload a file",
+  onUploaded,
+}: {
+  purpose: string;
+  applicationId?: string;
+  label?: string;
+  onUploaded?: (id: string) => void;
+}) {
   const [status, setStatus] = useState<{ tone: "error" | "ok"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -15,7 +25,11 @@ export function Uploader({ purpose, applicationId, label = "Upload a file", onUp
   async function upload() {
     const file = input.current?.files?.[0];
     if (!file) return setStatus({ tone: "error", text: "Choose a file first." });
-    if (file.size > 4 * 1024 * 1024) return setStatus({ tone: "error", text: "This file is larger than 4 MB. Please choose a smaller photo or PDF." });
+    if (file.size > 4 * 1024 * 1024)
+      return setStatus({
+        tone: "error",
+        text: "This file is larger than 4 MB. Please choose a smaller photo or PDF.",
+      });
     setBusy(true);
     setStatus(null);
     const fd = new FormData();
@@ -31,7 +45,10 @@ export function Uploader({ purpose, applicationId, label = "Upload a file", onUp
       onUploaded?.(body.file.id);
       router.refresh();
     } catch (e) {
-      setStatus({ tone: "error", text: e instanceof Error ? e.message : "Upload failed. Check your connection and try again." });
+      setStatus({
+        tone: "error",
+        text: e instanceof Error ? e.message : "Upload failed. Check your connection and try again.",
+      });
     } finally {
       setBusy(false);
     }
@@ -39,19 +56,43 @@ export function Uploader({ purpose, applicationId, label = "Upload a file", onUp
 
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="font-semibold">{label}</label>
+      <label htmlFor={id} className="font-semibold">
+        {label}
+      </label>
       <p className="text-sm text-muted">Photos (JPEG, PNG, WebP) or PDF, up to 4 MB each.</p>
-      <input id={id} ref={input} type="file" accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4,text/plain" className="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-teal-50 file:px-4 file:font-semibold file:text-teal" />
+      <input
+        id={id}
+        ref={input}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4,text/plain"
+        className="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-teal-50 file:px-4 file:font-semibold file:text-teal"
+      />
       <div>
-        <button type="button" onClick={upload} disabled={busy} className={buttonClass("secondary")}>{busy ? "Uploading…" : "Upload"}</button>
+        <button type="button" onClick={upload} disabled={busy} className={buttonClass("secondary")}>
+          {busy ? "Uploading…" : "Upload"}
+        </button>
       </div>
-      <p role="status" aria-live="polite" className={status?.tone === "error" ? "text-sm font-medium text-coral-700" : "text-sm text-teal"}>{status?.text}</p>
+      <p
+        role="status"
+        aria-live="polite"
+        className={status?.tone === "error" ? "text-sm font-medium text-coral-700" : "text-sm text-teal"}
+      >
+        {status?.text}
+      </p>
     </div>
   );
 }
 
 /** Upload control for use inside a form: uploads immediately and submits the new file id as `name`. */
-export function UploadField({ purpose, name = "fileId", label }: { purpose: string; name?: string; label: string }) {
+export function UploadField({
+  purpose,
+  name = "fileId",
+  label,
+}: {
+  purpose: string;
+  name?: string;
+  label: string;
+}) {
   const [fileId, setFileId] = useState("");
   return (
     <div>

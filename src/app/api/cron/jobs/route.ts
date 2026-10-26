@@ -14,7 +14,12 @@ export async function GET(request: Request) {
   }
   const hour = new Date().toISOString().slice(0, 13);
   await enqueueJob(db, "sweep_stale_payments", {}, { dedupeKey: `sweep:${hour}` });
-  await enqueueJob(db, "cleanup_expired", {}, { dedupeKey: `cleanup:${new Date().toISOString().slice(0, 10)}` });
+  await enqueueJob(
+    db,
+    "cleanup_expired",
+    {},
+    { dedupeKey: `cleanup:${new Date().toISOString().slice(0, 10)}` },
+  );
   const result = await runDueJobs(50);
   return Response.json(result);
 }

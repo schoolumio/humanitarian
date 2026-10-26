@@ -35,7 +35,8 @@ export const CONSENT_TEXT: Record<ConsentType, { title: string; description: str
   },
   CONTACT_REFERENCES: {
     title: "Contact the references I listed",
-    description: "We may contact the people you named (for example a community leader) to help verify your request.",
+    description:
+      "We may contact the people you named (for example a community leader) to help verify your request.",
   },
   PUBLIC_CAMPAIGN_PAGE: {
     title: "Publish an anonymised summary on a public campaign page",
@@ -44,7 +45,8 @@ export const CONSENT_TEXT: Record<ConsentType, { title: string; description: str
   },
   FILMING_AND_PHOTOGRAPHY: {
     title: "Photograph or film me",
-    description: "KindSpring may take photographs or video for documenting the support. Nothing is published without the separate consents below.",
+    description:
+      "KindSpring may take photographs or video for documenting the support. Nothing is published without the separate consents below.",
   },
   SOCIAL_MEDIA: {
     title: "Share my story on KindSpring social media",
@@ -56,15 +58,18 @@ export const CONSENT_TEXT: Record<ConsentType, { title: string; description: str
   },
   SPONSOR_REPORTING: {
     title: "Share progress with sponsors",
-    description: "Sponsors who fund your support may receive anonymised progress reports and approved photographs.",
+    description:
+      "Sponsors who fund your support may receive anonymised progress reports and approved photographs.",
   },
   THIRD_PARTY_BRAND_REUSE: {
     title: "Allow sponsors to reuse my story in their own communications",
-    description: "A sponsoring company may reuse approved material in its own communications, under a written agreement.",
+    description:
+      "A sponsoring company may reuse approved material in its own communications, under a written agreement.",
   },
   GUARDIAN_CONSENT_FOR_MINOR: {
     title: "Parent or guardian consent for a child",
-    description: "Required, together with a safeguarding review, before any identifiable image or story of a child is published.",
+    description:
+      "Required, together with a safeguarding review, before any identifiable image or story of a child is published.",
   },
 };
 
@@ -83,7 +88,12 @@ export function effectiveConsents(rows: readonly ConsentRow[]): Map<ConsentType,
 export type PublicationCheckInput = {
   channel: PublicationChannel;
   consents: Map<ConsentType, boolean>;
-  media: { depictsBeneficiary: boolean; depictsMinor: boolean; status: string; safeguardingCleared: boolean }[];
+  media: {
+    depictsBeneficiary: boolean;
+    depictsMinor: boolean;
+    status: string;
+    safeguardingCleared: boolean;
+  }[];
   openSafeguardingRestriction: boolean;
 };
 
@@ -103,8 +113,10 @@ export function publicationBlockers(input: PublicationCheckInput): string[] {
       reasons.push("Attached media shows the beneficiary but photography/filming consent is not in place.");
     }
     if (m.depictsMinor) {
-      if (input.consents.get("GUARDIAN_CONSENT_FOR_MINOR") !== true) reasons.push("Media depicts a child: guardian consent is required.");
-      if (!m.safeguardingCleared) reasons.push("Media depicts a child: a safeguarding review must clear it first.");
+      if (input.consents.get("GUARDIAN_CONSENT_FOR_MINOR") !== true)
+        reasons.push("Media depicts a child: guardian consent is required.");
+      if (!m.safeguardingCleared)
+        reasons.push("Media depicts a child: a safeguarding review must clear it first.");
     }
   }
   return [...new Set(reasons)];

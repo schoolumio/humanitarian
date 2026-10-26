@@ -1,6 +1,11 @@
 import { env } from "../env";
 import { hmacHex, safeEqual } from "../crypto";
-import { sanitizePayload, type NormalizedEvent, type PaymentProvider, type VerifiedTransaction } from "./types";
+import {
+  sanitizePayload,
+  type NormalizedEvent,
+  type PaymentProvider,
+  type VerifiedTransaction,
+} from "./types";
 
 /**
  * Paystack integration (https://paystack.com/docs).
@@ -17,17 +22,23 @@ const API = "https://api.paystack.co";
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     ...init,
-    headers: { Authorization: `Bearer ${env().PAYSTACK_SECRET_KEY}`, "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      Authorization: `Bearer ${env().PAYSTACK_SECRET_KEY}`,
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
     signal: AbortSignal.timeout(15_000),
     cache: "no-store",
   });
   const body = (await res.json().catch(() => ({}))) as { status?: boolean; message?: string; data?: unknown };
-  if (!res.ok || body.status !== true) throw new Error(`Paystack ${path} failed: ${res.status} ${body.message ?? ""}`.trim());
+  if (!res.ok || body.status !== true)
+    throw new Error(`Paystack ${path} failed: ${res.status} ${body.message ?? ""}`.trim());
   return body.data as T;
 }
 
 const str = (v: unknown) => (v === undefined || v === null ? null : String(v));
-const big = (v: unknown) => (v === undefined || v === null || v === "" ? null : BigInt(Math.trunc(Number(v))));
+const big = (v: unknown) =>
+  v === undefined || v === null || v === "" ? null : BigInt(Math.trunc(Number(v)));
 
 export const paystackProvider: PaymentProvider = {
   name: "paystack",
@@ -49,10 +60,18 @@ export const paystackProvider: PaymentProvider = {
 
   async verify(reference) {
     try {
-      const d = await call<{ id: number; status: string; reference: string; amount: number; currency: string; fees: number | null; paid_at: string | null }>(
-        `/transaction/verify/${encodeURIComponent(reference)}`,
-      );
-      const status = (["success", "failed", "abandoned", "pending", "reversed"].includes(d.status) ? d.status : "unknown") as VerifiedTransaction["status"];
+      const d = await call<{
+        id: number;
+        status: string;
+        reference: string;
+        amount: number;
+        currency: string;
+        fees: number | null;
+        paid_at: string | null;
+      }>(`/transaction/verify/${encodeURIComponent(reference)}`);
+      const status = (
+        ["success", "failed", "abandoned", "pending", "reversed"].includes(d.status) ? d.status : "unknown"
+      ) as VerifiedTransaction["status"];
       return {
         reference: d.reference,
         status,
@@ -82,26 +101,51 @@ export const paystackProvider: PaymentProvider = {
     let event: NormalizedEvent;
     switch (type) {
       case "charge.success":
-        event = { kind: "charge.success", reference: String(d.reference), dedupeKey: `paystack:charge.success:${str(d.id) ?? d.reference}` };
+        event = {
+          kind: "charge.success",
+          reference: String(d.reference),
+          dedupeKey: `paystack:charge.success:${str(d.id) ?? d.reference}`,
+        };
         break;
       case "refund.processed":
       case "refund.failed":
       case "refund.pending": {
         const reference = str(d.transaction_reference) ?? str(tx.reference);
         const providerRefundId = str(d.id) ?? str(d.refund_reference);
-        event = { kind: type, reference, providerRefundId, amountMinor: big(d.amount), dedupeKey: `paystack:${type}:${providerRefundId ?? reference}` };
+        event = {
+          kind: type,
+          reference,
+          providerRefundId,
+          amountMinor: big(d.amount),
+          dedupeKey: `paystack:${type}:${providerRefundId ?? reference}`,
+        };
         break;
       }
       case "charge.dispute.create":
       case "charge.dispute.resolve": {
         const disputeId = str(d.id) ?? "unknown";
         const resolution = str(d.resolution) ?? str(d.status) ?? "";
-        const kind = type === "charge.dispute.create" ? "dispute.created" : /merchant-accepted|lost|refund/i.test(resolution) ? "dispute.lost" : "dispute.won";
-        event = { kind, disputeId, reference: String(tx.reference ?? d.transaction_reference ?? ""), amountMinor: big(d.refund_amount ?? tx.amount), dedupeKey: `paystack:${kind}:${disputeId}` };
+        const kind =
+          type === "charge.dispute.create"
+            ? "dispute.created"
+            : /merchant-accepted|lost|refund/i.test(resolution)
+              ? "dispute.lost"
+              : "dispute.won";
+        event = {
+          kind,
+          disputeId,
+          reference: String(tx.reference ?? d.transaction_reference ?? ""),
+          amountMinor: big(d.refund_amount ?? tx.amount),
+          dedupeKey: `paystack:${kind}:${disputeId}`,
+        };
         break;
       }
       default:
-        event = { kind: "ignored", eventType: type, dedupeKey: `paystack:${type}:${str(d.id) ?? str(d.reference) ?? hmacHex("sha256", "dedupe", rawBody)}` };
+        event = {
+          kind: "ignored",
+          eventType: type,
+          dedupeKey: `paystack:${type}:${str(d.id) ?? str(d.reference) ?? hmacHex("sha256", "dedupe", rawBody)}`,
+        };
     }
     return { eventType: type, event, sanitized: sanitizePayload(body) };
   },
@@ -111,6 +155,9 @@ export const paystackProvider: PaymentProvider = {
       method: "POST",
       body: JSON.stringify({ transaction: reference, amount: amountMinor.toString() }),
     });
-    return { providerRefundId: String(d.id ?? `ref_${reference}`), status: d.status === "processed" ? "processed" : "pending" };
+    return {
+      providerRefundId: String(d.id ?? `ref_${reference}`),
+      status: d.status === "processed" ? "processed" : "pending",
+    };
   },
 };

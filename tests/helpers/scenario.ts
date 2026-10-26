@@ -27,10 +27,21 @@ export async function submittedApplication(applicant?: Actor, overrides: Partial
     whyNow: "The landlord requires payment this month.",
     successOutcome: "Stable accommodation for the household.",
   });
-  await apps.saveStep(a, draft.reference, 4, { items: [{ description: "Rent (6 months)", quantity: "1", unitCost: "300000" }, { description: "Mattress", quantity: "2", unitCost: "50000" }] });
+  await apps.saveStep(a, draft.reference, 4, {
+    items: [
+      { description: "Rent (6 months)", quantity: "1", unitCost: "300000" },
+      { description: "Mattress", quantity: "2", unitCost: "50000" },
+    ],
+  });
   await apps.saveStep(a, draft.reference, 5, {});
   await apps.saveStep(a, draft.reference, 6, { contactMethods: ["PHONE_CALL", "SMS"] });
-  await apps.saveConsents(a, draft.reference, { ASSESSMENT_DATA_PROCESSING: true, PUBLIC_CAMPAIGN_PAGE: true, SPONSOR_REPORTING: true, FILMING_AND_PHOTOGRAPHY: true, SOCIAL_MEDIA: true });
+  await apps.saveConsents(a, draft.reference, {
+    ASSESSMENT_DATA_PROCESSING: true,
+    PUBLIC_CAMPAIGN_PAGE: true,
+    SPONSOR_REPORTING: true,
+    FILMING_AND_PHOTOGRAPHY: true,
+    SOCIAL_MEDIA: true,
+  });
   await apps.submitApplication(a, draft.reference);
   const app = await db.application.findUniqueOrThrow({ where: { reference: draft.reference } });
   return { applicant: a, app, category };
@@ -44,29 +55,44 @@ export async function approvedCase() {
   const inv = await makeUser(["INVESTIGATOR"], "Investigator Person");
   await cases.transitionCase(cm1, s.app.id, "INITIAL_REVIEW", "Screening started");
   await cases.assignInvestigator(cm1, s.app.id, inv.userId, 2);
-  const asg = await db.investigatorAssignment.findFirstOrThrow({ where: { applicationId: s.app.id, investigatorId: inv.userId } });
+  const asg = await db.investigatorAssignment.findFirstOrThrow({
+    where: { applicationId: s.app.id, investigatorId: inv.userId },
+  });
   await cases.declareConflict(inv, asg.id, false, "");
   await cases.transitionCase(cm1, s.app.id, "VERIFICATION_IN_PROGRESS", "Remote verification");
   const tasks = await db.verificationTask.findMany({ where: { applicationId: s.app.id } });
   for (const t of tasks) await cases.updateTask(inv, s.app.id, t.id, "DONE", "Checked");
-  await cases.submitInvestigationReport(inv, s.app.id, { summary: "Spoke with applicant and landlord.", findings: "Need confirmed; quote matches local prices.", recommendation: "APPROVE" });
+  await cases.submitInvestigationReport(inv, s.app.id, {
+    summary: "Spoke with applicant and landlord.",
+    findings: "Need confirmed; quote matches local prices.",
+    recommendation: "APPROVE",
+  });
   await cases.submitReview(cm1, s.app.id, "APPROVE", "Findings are consistent and well evidenced.");
   await cases.transitionCase(cm1, s.app.id, "PENDING_APPROVAL", "Ready for decision");
-  await cases.decideCase(cm2, s.app.id, { decision: "APPROVED", reasonInternal: "Verified need within policy.", approvedAmount: "400000" });
+  await cases.decideCase(cm2, s.app.id, {
+    decision: "APPROVED",
+    reasonInternal: "Verified need within policy.",
+    approvedAmount: "400000",
+  });
   return { ...s, cm1, cm2, inv };
 }
 
 export const CAMPAIGN_INPUT = {
   title: "Safe accommodation for a family of four",
-  summary: "A family in Lagos State lost their rented room to a fire. Support will cover six months' rent and replace essential bedding so the household can stay together safely.",
+  summary:
+    "A family in Lagos State lost their rented room to a fire. Support will cover six months' rent and replace essential bedding so the household can stay together safely.",
   locationLabel: "Ikorodu, Lagos State",
   interventionSummary: "Six months' rent paid directly to the landlord, plus two mattresses.",
-  verificationSummary: "Verified by phone, a landlord confirmation and an investigator report reviewed independently.",
+  verificationSummary:
+    "Verified by phone, a landlord confirmation and an investigator report reviewed independently.",
   visibility: "PUBLIC",
   acceptsDonations: "on",
   acceptsSponsorship: "on",
   acceptsInKind: "on",
-  budgetLines: [{ description: "Rent (6 months)", amount: "300000" }, { description: "Two mattresses", amount: "100000" }],
+  budgetLines: [
+    { description: "Rent (6 months)", amount: "300000" },
+    { description: "Two mattresses", amount: "100000" },
+  ],
 };
 
 export async function publishedCampaign() {

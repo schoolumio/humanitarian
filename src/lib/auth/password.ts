@@ -14,8 +14,19 @@ export async function verifyPassword(passwordHash: string, password: string) {
 }
 
 const COMMON = new Set([
-  "password", "password1", "password123", "123456789", "1234567890", "qwertyuiop", "iloveyou12",
-  "kindspring", "kindspring1", "nigeria123", "letmein123", "welcome123", "adminadmin",
+  "password",
+  "password1",
+  "password123",
+  "123456789",
+  "1234567890",
+  "qwertyuiop",
+  "iloveyou12",
+  "kindspring",
+  "kindspring1",
+  "nigeria123",
+  "letmein123",
+  "welcome123",
+  "adminadmin",
 ]);
 
 /** Returns a user-facing problem, or null if acceptable. Length beats complexity rules (NIST 800-63B). */
