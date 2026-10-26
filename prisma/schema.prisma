@@ -1,0 +1,1463 @@
+// KindSpring data model.
+//
+// Conventions
+// - Money is stored as BigInt in the currency's minor unit (kobo for NGN: ₦1 = 100 kobo)
+//   together with an ISO-4217 `currency` column. Never use floats for money.
+// - Internal ids are cuids and are never shown publicly. Public identifiers
+//   (campaign.publicId, application.reference, payment.reference) are random,
+//   non-sequential and carry no personal information.
+// - Financial and audit tables are append-only. Postgres triggers in the
+//   migrations reject UPDATE/DELETE on journal_entries, journal_lines and audit_logs
+//   and check that every journal balances at commit.
+// - Personal data is soft-deleted / anonymised according to docs/data-protection.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Identity & access ─────────────────────────────
+
+enum Role {
+  APPLICANT
+  DONOR
+  SPONSOR
+  INVESTIGATOR
+  CASE_MANAGER
+  FINANCE_OFFICER
+  MEDIA_EDITOR
+  SAFEGUARDING_OFFICER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique // stored lower-cased
+  name             String
+  phone            String?
+  passwordHash     String
+  status           UserStatus @default(ACTIVE)
+  emailVerifiedAt  DateTime?
+  mfaSecretEnc     String? // AES-256-GCM encrypted TOTP secret
+  mfaEnabledAt     DateTime?
+  failedLoginCount Int        @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?
+
+  roles         UserRole[]               @relation("UserRoles")
+  rolesGranted  UserRole[]               @relation("RoleGrantor")
+  sessions      Session[]
+  emailTokens   EmailToken[]
+  applications  Application[]            @relation("ApplicantApplications")
+  memberships   OrganisationMember[]
+  payments      Payment[]
+  assignments   InvestigatorAssignment[] @relation("AssignedInvestigator")
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model UserRole {
+  id          String   @id @default(cuid())
+  userId      String
+  role        Role
+  grantedById String?
+  createdAt   DateTime @default(now())
+
+  user      User  @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy User? @relation("RoleGrantor", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, role])
+  @@index([role])
+  @@map("user_roles")
+}
+
+model Session {
+  id            String    @id // SHA-256 hash of the session token; the raw token only lives in the cookie
+  userId        String
+  expiresAt     DateTime
+  mfaVerifiedAt DateTime? // set when a TOTP code was verified for this session (step-up)
+  userAgent     String?
+  ipHash        String?
+  createdAt     DateTime  @default(now())
+  lastSeenAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+enum EmailTokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model EmailToken {
+  id        String            @id @default(cuid())
+  userId    String
+  purpose   EmailTokenPurpose
+  tokenHash String            @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+  @@map("email_tokens")
+}
+
+model RateLimitBucket {
+  key         String   @id
+  windowStart DateTime
+  count       Int
+
+  @@map("rate_limit_buckets")
+}
+
+// ───────────────────────────── Organisations (sponsors) ─────────────────────────────
+
+enum OrganisationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model Organisation {
+  id                 String             @id @default(cuid())
+  name               String
+  registrationNumber String? // CAC number where available
+  website            String?
+  sector             String?
+  address            String?
+  contactEmail       String
+  contactPhone       String?
+  description        String?
+  status             OrganisationStatus @default(PENDING_REVIEW)
+  reviewedById       String?
+  reviewedAt         DateTime?
+  reviewNotes        String?
+  publicDisplayName  String? // name sponsors may be credited under, where agreements permit
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  members    OrganisationMember[]
+  proposals  SponsorshipProposal[]
+  agreements SponsorshipAgreement[]
+  inKind     InKindContribution[]
+
+  @@index([status])
+  @@map("organisations")
+}
+
+model OrganisationMember {
+  id                         String   @id @default(cuid())
+  organisationId             String
+  userId                     String
+  jobTitle                   String?
+  isAuthorisedRepresentative Boolean  @default(false)
+  createdAt                  DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, userId])
+  @@index([userId])
+  @@map("organisation_members")
+}
+
+// ───────────────────────────── Applications ("cases") ─────────────────────────────
+
+model CaseCategory {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique
+  name                  String
+  description           String
+  active                Boolean  @default(true)
+  sortOrder             Int      @default(0)
+  // Array of { key, label, stage } items used to seed verification tasks.
+  verificationChecklist Json     @default("[]")
+  createdAt             DateTime @default(now())
+
+  applications Application[]
+  campaigns    Campaign[]
+
+  @@map("case_categories")
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  INITIAL_REVIEW
+  ADDITIONAL_INFORMATION_REQUIRED
+  VERIFICATION_IN_PROGRESS
+  FIELD_VISIT_REQUIRED
+  PENDING_APPROVAL
+  APPROVED
+  DECLINED
+  WITHDRAWN
+  CLOSED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  reference   String            @unique // e.g. KS-7Q4M-2KXD; shown to applicant
+  applicantId String
+  status      ApplicationStatus @default(DRAFT)
+  draftStep   Int               @default(1)
+  categoryId  String?
+
+  // Step 1 – applicant details (minimum necessary)
+  fullName              String?
+  phone                 String?
+  state                 String? // Nigerian state
+  lga                   String? // local government area
+  community             String? // town / community – never published verbatim
+  householdSize         Int?
+  completedWithHelpFrom String? // name/role of a person assisting with the form, if any
+
+  // Step 3 – need
+  whatHappened         String?
+  assistanceNeeded     String?
+  whyNow               String?
+  successOutcome       String?
+  urgentSafetyConcern  Boolean @default(false)
+  safetyConcernDetails String?
+
+  // Step 4 – budget
+  requestedAmountMinor BigInt?
+  currency             String  @default("NGN")
+  budgetNotes          String?
+
+  // Step 6 – verification preferences
+  contactMethods           String[] @default([]) // PHONE_CALL, SMS, WHATSAPP, EMAIL, VIDEO_CALL, IN_PERSON
+  safeContactTimes         String?
+  contactSafetyNotes       String?
+  verificationAlternatives String? // e.g. community leader, no ID, no smartphone
+  referenceContacts        String?
+
+  riskLevel                 RiskLevel @default(LOW)
+  assignedCaseManagerId     String?
+  declineReasonForApplicant String?
+  submittedAt               DateTime?
+  decidedAt                 DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  archivedAt                DateTime?
+
+  applicant    User                     @relation("ApplicantApplications", fields: [applicantId], references: [id], onDelete: Restrict)
+  category     CaseCategory?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  budgetItems  ApplicationBudgetItem[]
+  consents     ApplicantConsent[]
+  files        StoredFile[]
+  tasks        VerificationTask[]
+  assignments  InvestigatorAssignment[]
+  fieldVisits  FieldVisit[]
+  notes        InvestigationNote[]
+  reports      InvestigationReport[]
+  reviews      CaseReview[]
+  decisions    CaseDecision[]
+  infoRequests InformationRequest[]
+  campaign     Campaign?
+  riskAlerts   RiskAlert[]
+  safeguarding SafeguardingRecord[]
+
+  @@index([applicantId])
+  @@index([status, submittedAt])
+  @@index([phone])
+  @@map("applications")
+}
+
+model ApplicationBudgetItem {
+  id            String  @id @default(cuid())
+  applicationId String
+  description   String
+  quantity      Int     @default(1)
+  unitCostMinor BigInt
+  sourceNote    String? // where the estimate came from
+  sortOrder     Int     @default(0)
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("application_budget_items")
+}
+
+enum ConsentType {
+  ASSESSMENT_DATA_PROCESSING // required to assess a request
+  CONTACT_REFERENCES
+  PUBLIC_CAMPAIGN_PAGE
+  SOCIAL_MEDIA
+  PAID_ADVERTISING
+  SPONSOR_REPORTING
+  THIRD_PARTY_BRAND_REUSE
+  FILMING_AND_PHOTOGRAPHY
+  GUARDIAN_CONSENT_FOR_MINOR
+}
+
+// Append-only consent ledger. The effective consent for (application, type) is the most recent row.
+model ApplicantConsent {
+  id            String      @id @default(cuid())
+  applicationId String
+  type          ConsentType
+  granted       Boolean
+  recordedById  String // the applicant, or staff member recording a verbal/written consent
+  method        String      @default("ONLINE") // ONLINE, VERBAL_RECORDED_BY_STAFF, WRITTEN_FORM
+  notes         String?
+  createdAt     DateTime    @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, type, createdAt])
+  @@map("applicant_consents")
+}
+
+enum FilePurpose {
+  APPLICATION_EVIDENCE
+  VERIFICATION_EVIDENCE
+  DELIVERY_EVIDENCE
+  INVOICE
+  MEDIA_ORIGINAL
+  MEDIA_PUBLIC
+}
+
+enum FileVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  NOT_SCANNED_DEV // development only: scanner not configured
+}
+
+model StoredFile {
+  id            String         @id @default(cuid())
+  storageKey    String         @unique // random key; never derived from user input
+  visibility    FileVisibility @default(PRIVATE)
+  purpose       FilePurpose
+  originalName  String
+  mimeType      String
+  sizeBytes     Int
+  sha256        String
+  scanStatus    ScanStatus     @default(PENDING)
+  uploadedById  String
+  applicationId String?
+  createdAt     DateTime       @default(now())
+  deletedAt     DateTime?
+
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId])
+  @@index([uploadedById])
+  @@map("stored_files")
+}
+
+model InformationRequest {
+  id            String    @id @default(cuid())
+  applicationId String
+  requestedById String
+  message       String
+  responseText  String?
+  respondedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("information_requests")
+}
+
+// ───────────────────────────── Verification ─────────────────────────────
+
+enum VerificationStage {
+  SCREENING
+  REMOTE
+  FIELD
+  REVIEW
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  NOT_APPLICABLE
+}
+
+model VerificationTask {
+  id            String            @id @default(cuid())
+  applicationId String
+  stage         VerificationStage
+  key           String
+  label         String
+  status        TaskStatus        @default(OPEN)
+  outcomeNote   String?
+  completedById String?
+  completedAt   DateTime?
+  dueAt         DateTime?
+  createdAt     DateTime          @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, key])
+  @@map("verification_tasks")
+}
+
+model InvestigatorAssignment {
+  id                 String    @id @default(cuid())
+  applicationId      String
+  investigatorId     String
+  assignedById       String
+  active             Boolean   @default(true)
+  priority           Int       @default(2) // 1 = high, 2 = normal, 3 = low
+  noConflictDeclared Boolean   @default(false)
+  followUpAt         DateTime?
+  createdAt          DateTime  @default(now())
+  endedAt            DateTime?
+
+  application  Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  investigator User        @relation("AssignedInvestigator", fields: [investigatorId], references: [id], onDelete: Restrict)
+
+  @@index([investigatorId, active])
+  @@index([applicationId])
+  @@map("investigator_assignments")
+}
+
+enum FieldVisitStatus {
+  REQUESTED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model FieldVisit {
+  id                 String           @id @default(cuid())
+  applicationId      String
+  investigatorId     String?
+  requestedById      String
+  status             FieldVisitStatus @default(REQUESTED)
+  reason             String
+  scheduledFor       DateTime?
+  completedAt        DateTime?
+  estimatedCostMinor BigInt?
+  actualCostMinor    BigInt?
+  notes              String?
+  createdAt          DateTime         @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@index([status])
+  @@map("field_visits")
+}
+
+model InvestigationNote {
+  id            String   @id @default(cuid())
+  applicationId String
+  authorId      String
+  body          String
+  restricted    Boolean  @default(false) // restricted notes: case managers & safeguarding only
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("investigation_notes")
+}
+
+enum Recommendation {
+  APPROVE
+  DECLINE
+  FURTHER_INVESTIGATION
+}
+
+model InvestigationReport {
+  id             String         @id @default(cuid())
+  applicationId  String
+  investigatorId String
+  summary        String
+  findings       String
+  evidenceGaps   String?
+  recommendation Recommendation
+  createdAt      DateTime       @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("investigation_reports")
+}
+
+model CaseReview {
+  id             String         @id @default(cuid())
+  applicationId  String
+  reviewerId     String
+  recommendation Recommendation
+  comments       String
+  createdAt      DateTime       @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("case_reviews")
+}
+
+enum Decision {
+  APPROVED
+  DECLINED
+}
+
+model CaseDecision {
+  id                  String   @id @default(cuid())
+  applicationId       String
+  decidedById         String
+  decision            Decision
+  reasonInternal      String
+  reasonForApplicant  String?
+  approvedAmountMinor BigInt?
+  createdAt           DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("case_decisions")
+}
+
+// ───────────────────────────── Generic status history ─────────────────────────────
+
+enum EntityType {
+  APPLICATION
+  CAMPAIGN
+  PAYMENT
+  INTERVENTION
+  DISBURSEMENT
+  REFUND
+  STORY
+  MEDIA_ASSET
+  ORGANISATION
+  PROPOSAL
+  AGREEMENT
+  IN_KIND
+  COMPLAINT
+}
+
+model StatusHistory {
+  id         String     @id @default(cuid())
+  entityType EntityType
+  entityId   String
+  fromStatus String?
+  toStatus   String
+  actorId    String? // null = system (e.g. webhook)
+  reason     String?
+  createdAt  DateTime   @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@map("status_history")
+}
+
+// ───────────────────────────── Campaigns ─────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  READY_FOR_PUBLICATION
+  PUBLISHED
+  FUNDING_IN_PROGRESS
+  PARTIALLY_FUNDED
+  FULLY_FUNDED
+  INTERVENTION_IN_PROGRESS
+  OUTCOME_REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum CampaignVisibility {
+  PUBLIC // listed on the public website (requires PUBLIC_CAMPAIGN_PAGE consent)
+  SPONSORS_ONLY // shown only to approved sponsor organisations (requires SPONSOR_REPORTING consent)
+}
+
+model Campaign {
+  id                   String         @id @default(cuid())
+  publicId             String         @unique // random, non-sequential, used in URLs
+  applicationId        String         @unique
+  categoryId           String
+  title                String
+  summary              String
+  locationLabel        String // general location only, e.g. "Ikorodu, Lagos State"
+  interventionSummary  String // the requested intervention, in plain language
+  verificationSummary  String
+  verifiedAt           DateTime
+  targetAmountMinor    BigInt
+  currency             String         @default("NGN")
+  // Denormalised totals, updated in the same DB transaction as the underlying payment
+  // state change and cross-checked against the ledger by reconciliation.
+  confirmedAmountMinor BigInt         @default(0) // succeeded payments (gross)
+  refundedAmountMinor  BigInt         @default(0) // processed refunds + lost chargebacks
+  acceptsDonations     Boolean        @default(true)
+  acceptsSponsorship   Boolean        @default(true)
+  acceptsInKind        Boolean        @default(false)
+  status               CampaignStatus @default(DRAFT)
+  visibility           CampaignVisibility @default(PUBLIC)
+  readyById            String?
+  publishedById        String?
+  startsAt             DateTime?
+  endsAt               DateTime?
+  publishedAt          DateTime?
+  createdById          String
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  application  Application            @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  category     CaseCategory           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  budgetLines  CampaignBudgetLine[]
+  payments     Payment[]
+  proposals    SponsorshipProposal[]
+  agreements   SponsorshipAgreement[]
+  inKind       InKindContribution[]
+  intervention Intervention?
+  media        MediaAsset[]
+  stories      Story[]
+  riskAlerts   RiskAlert[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@map("campaigns")
+}
+
+model CampaignBudgetLine {
+  id          String @id @default(cuid())
+  campaignId  String
+  description String
+  amountMinor BigInt
+  sortOrder   Int    @default(0)
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@map("campaign_budget_lines")
+}
+
+// ───────────────────────────── Payments ─────────────────────────────
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUND_PENDING
+  PARTIALLY_REFUNDED
+  REFUNDED
+  DISPUTED
+}
+
+enum PaymentKind {
+  DONATION
+  SPONSOR_PAYMENT
+}
+
+enum ReconciliationStatus {
+  UNRECONCILED
+  MATCHED
+  MISMATCH
+}
+
+model Payment {
+  id                    String               @id @default(cuid())
+  reference             String               @unique // our reference, sent to provider
+  provider              String // "paystack" | "sandbox" | "offline"
+  providerTransactionId String?
+  kind                  PaymentKind          @default(DONATION)
+  campaignId            String
+  agreementId           String?
+  payerUserId           String?
+  payerEmail            String
+  payerName             String
+  isAnonymous           Boolean              @default(false)
+  amountMinor           BigInt
+  currency              String               @default("NGN")
+  feeMinor              BigInt               @default(0)
+  refundedMinor         BigInt               @default(0)
+  status                PaymentStatus        @default(CREATED)
+  checkoutUrl           String?
+  failureReason         String?
+  paidAt                DateTime?
+  reconciliation        ReconciliationStatus @default(UNRECONCILED)
+  reconciledAt          DateTime?
+  reconciliationNote    String?
+  // offline (bank transfer) receipts need a second finance officer to confirm
+  recordedById          String?
+  confirmedById         String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  campaign    Campaign              @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  agreement   SponsorshipAgreement? @relation(fields: [agreementId], references: [id], onDelete: Restrict)
+  payer       User?                 @relation(fields: [payerUserId], references: [id], onDelete: SetNull)
+  events      PaymentEvent[]
+  refunds     Refund[]
+  chargebacks Chargeback[]
+
+  @@unique([provider, providerTransactionId])
+  @@index([campaignId, status])
+  @@index([payerUserId])
+  @@index([status, reconciliation])
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id            String    @id @default(cuid())
+  provider      String
+  dedupeKey     String    @unique // provider + event + provider object id: idempotency
+  eventType     String
+  paymentId     String?
+  payloadSha256 String
+  payload       Json // sanitised: no card or customer authorisation data
+  receivedAt    DateTime  @default(now())
+  processedAt   DateTime?
+  outcome       String? // APPLIED, IGNORED_STALE, IGNORED_UNKNOWN, REJECTED_MISMATCH, ERROR
+  error         String?
+
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId])
+  @@map("payment_events")
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  PENDING_PROVIDER
+  PROCESSED
+  FAILED
+  REJECTED
+}
+
+model Refund {
+  id               String       @id @default(cuid())
+  paymentId        String
+  amountMinor      BigInt
+  reason           String
+  status           RefundStatus @default(REQUESTED)
+  requestedById    String
+  approvedById     String?
+  providerRefundId String?      @unique
+  failureReason    String?
+  createdAt        DateTime     @default(now())
+  processedAt      DateTime?
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId])
+  @@index([status])
+  @@map("refunds")
+}
+
+enum ChargebackStatus {
+  OPEN
+  WON
+  LOST
+}
+
+model Chargeback {
+  id                String           @id @default(cuid())
+  paymentId         String
+  providerDisputeId String           @unique
+  amountMinor       BigInt
+  status            ChargebackStatus @default(OPEN)
+  openedAt          DateTime         @default(now())
+  resolvedAt        DateTime?
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@map("chargebacks")
+}
+
+// ───────────────────────────── Ledger ─────────────────────────────
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  REVENUE
+  EXPENSE
+}
+
+model LedgerAccount {
+  code        String      @id // e.g. "1000"
+  name        String
+  type        AccountType
+  restricted  Boolean     @default(false) // lines must carry a campaign (fund) dimension
+  description String
+
+  lines JournalLine[]
+
+  @@map("ledger_accounts")
+}
+
+model JournalEntry {
+  id             String   @id @default(cuid())
+  number         Int      @unique @default(autoincrement())
+  idempotencyKey String   @unique // e.g. "payment:<id>:succeeded"
+  description    String
+  sourceType     String // PAYMENT, REFUND, CHARGEBACK, DISBURSEMENT, OFFLINE_RECEIPT, ADJUSTMENT
+  sourceId       String
+  reversesId     String?  @unique
+  createdById    String?
+  occurredAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  lines      JournalLine[]
+  reverses   JournalEntry? @relation("Reversal", fields: [reversesId], references: [id], onDelete: Restrict)
+  reversedBy JournalEntry? @relation("Reversal")
+
+  @@index([sourceType, sourceId])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id          String  @id @default(cuid())
+  entryId     String
+  accountCode String
+  campaignId  String? // fund dimension for restricted funds
+  debitMinor  BigInt  @default(0)
+  creditMinor BigInt  @default(0)
+  currency    String  @default("NGN")
+  memo        String?
+
+  entry   JournalEntry  @relation(fields: [entryId], references: [id], onDelete: Restrict)
+  account LedgerAccount @relation(fields: [accountCode], references: [code], onDelete: Restrict)
+
+  @@index([accountCode, campaignId])
+  @@index([campaignId])
+  @@index([entryId])
+  @@map("journal_lines")
+}
+
+// ───────────────────────────── Sponsorship ─────────────────────────────
+
+enum ProposalType {
+  ENQUIRY
+  FULL_CASH_SPONSORSHIP
+  PARTIAL_CASH_SPONSORSHIP
+  IN_KIND_GOODS
+  PROFESSIONAL_SERVICES
+}
+
+enum ProposalStatus {
+  SUBMITTED
+  IN_DISCUSSION
+  DECLINED
+  WITHDRAWN
+  CONVERTED_TO_AGREEMENT
+}
+
+model SponsorshipProposal {
+  id                  String         @id @default(cuid())
+  organisationId      String
+  campaignId          String?
+  submittedById       String
+  type                ProposalType
+  message             String
+  proposedAmountMinor BigInt?
+  status              ProposalStatus @default(SUBMITTED)
+  staffResponse       String?
+  handledById         String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  organisation Organisation          @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  campaign     Campaign?             @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  agreement    SponsorshipAgreement?
+
+  @@index([organisationId])
+  @@index([status])
+  @@map("sponsorship_proposals")
+}
+
+enum AgreementStatus {
+  DRAFT // offer prepared by staff
+  APPROVED // internally approved (second staff member)
+  SIGNED // signed by the sponsor's authorised representative
+  FULFILLED
+  CANCELLED
+}
+
+model SponsorshipAgreement {
+  id                 String          @id @default(cuid())
+  organisationId     String
+  campaignId         String
+  proposalId         String?         @unique
+  pledgedAmountMinor BigInt          @default(0) // a pledge is NOT money received
+  inKindDescription  String?
+  terms              String
+  brandingPermitted  Boolean         @default(false)
+  status             AgreementStatus @default(DRAFT)
+  preparedById       String
+  approvedById       String?
+  approvedAt         DateTime?
+  signedByUserId     String?
+  signedByName       String?
+  signedAt           DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  organisation Organisation         @relation(fields: [organisationId], references: [id], onDelete: Restrict)
+  campaign     Campaign             @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  proposal     SponsorshipProposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+  payments     Payment[]
+
+  @@index([organisationId])
+  @@index([campaignId])
+  @@map("sponsorship_agreements")
+}
+
+enum InKindStatus {
+  OFFERED
+  ACCEPTED
+  DECLINED
+  PARTIALLY_DELIVERED
+  DELIVERED
+  CANCELLED
+}
+
+model InKindContribution {
+  id                    String       @id @default(cuid())
+  organisationId        String?
+  offeredById           String
+  campaignId            String
+  itemCategory          String // FURNITURE, FOOD, BUILDING_MATERIALS, ...
+  description           String
+  quantity              Int
+  unit                  String       @default("items")
+  quantityDelivered     Int          @default(0)
+  estimatedValueMinor   BigInt? // estimate only – never counted as cash
+  valuationBasis        String?
+  deliveryArrangements  String?
+  status                InKindStatus @default(OFFERED)
+  reviewedById          String?
+  deliveryConfirmedById String?
+  deliveredAt           DateTime?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id], onDelete: SetNull)
+  campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+
+  @@index([campaignId])
+  @@index([status])
+  @@map("in_kind_contributions")
+}
+
+// ───────────────────────────── Interventions ─────────────────────────────
+
+enum InterventionStatus {
+  PLANNING
+  IN_PROGRESS
+  DELIVERED
+  PARTIALLY_DELIVERED
+  OUTCOME_REVIEW
+  COMPLETED
+  UNSUCCESSFUL
+  CANCELLED
+}
+
+model Intervention {
+  id                     String             @id @default(cuid())
+  campaignId             String             @unique
+  caseManagerId          String
+  scope                  String
+  plannedOutcome         String
+  approvedBudgetMinor    BigInt
+  status                 InterventionStatus @default(PLANNING)
+  completionChecklist    Json               @default("[]") // [{ key, label, done }]
+  beneficiaryFeedback    String?
+  feedbackConsentToShare Boolean            @default(false)
+  outcomeSummary         String?
+  outcomeReviewedById    String?
+  completedAt            DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  campaign         Campaign              @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  budgetChanges    BudgetChangeRequest[]
+  purchaseRequests PurchaseRequest[]
+  disbursements    Disbursement[]
+  deliveries       DeliveryEvidence[]
+
+  @@map("interventions")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model BudgetChangeRequest {
+  id             String         @id @default(cuid())
+  interventionId String
+  requestedById  String
+  oldBudgetMinor BigInt
+  newBudgetMinor BigInt
+  reason         String
+  status         ApprovalStatus @default(PENDING)
+  decidedById    String?
+  decidedAt      DateTime?
+  createdAt      DateTime       @default(now())
+
+  intervention Intervention @relation(fields: [interventionId], references: [id], onDelete: Restrict)
+
+  @@index([interventionId])
+  @@map("budget_change_requests")
+}
+
+enum SupplierStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  SUSPENDED
+}
+
+model Supplier {
+  id                 String         @id @default(cuid())
+  name               String
+  contactName        String?
+  contactPhone       String?
+  contactEmail       String?
+  bankName           String?
+  accountNumberLast4 String? // full bank details are held by the disbursement partner, not here
+  status             SupplierStatus @default(PENDING_VERIFICATION)
+  verifiedById       String?
+  createdById        String
+  createdAt          DateTime       @default(now())
+
+  purchaseRequests PurchaseRequest[]
+  disbursements    Disbursement[]
+
+  @@map("suppliers")
+}
+
+model PurchaseRequest {
+  id             String         @id @default(cuid())
+  interventionId String
+  supplierId     String
+  description    String
+  amountMinor    BigInt
+  quoteFileId    String?
+  status         ApprovalStatus @default(PENDING)
+  requestedById  String
+  decidedById    String?
+  decidedAt      DateTime?
+  createdAt      DateTime       @default(now())
+
+  intervention  Intervention   @relation(fields: [interventionId], references: [id], onDelete: Restrict)
+  supplier      Supplier       @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  disbursements Disbursement[]
+
+  @@index([interventionId])
+  @@map("purchase_requests")
+}
+
+enum DisbursementStatus {
+  REQUESTED
+  APPROVED
+  PAID
+  REJECTED
+  CANCELLED
+}
+
+model Disbursement {
+  id                String             @id @default(cuid())
+  interventionId    String
+  purchaseRequestId String?
+  supplierId        String
+  amountMinor       BigInt
+  currency          String             @default("NGN")
+  invoiceNumber     String?
+  invoiceFileId     String?
+  purpose           String
+  status            DisbursementStatus @default(REQUESTED)
+  requestedById     String
+  approvedById      String?
+  approvedAt        DateTime?
+  paidRecordedById  String?
+  paymentReference  String? // bank / disbursement-partner reference
+  paidAt            DateTime?
+  rejectionReason   String?
+  createdAt         DateTime           @default(now())
+
+  intervention    Intervention     @relation(fields: [interventionId], references: [id], onDelete: Restrict)
+  purchaseRequest PurchaseRequest? @relation(fields: [purchaseRequestId], references: [id], onDelete: Restrict)
+  supplier        Supplier         @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@index([interventionId])
+  @@index([status])
+  @@map("disbursements")
+}
+
+model DeliveryEvidence {
+  id             String   @id @default(cuid())
+  interventionId String
+  description    String
+  fileId         String?
+  deliveredAt    DateTime
+  recordedById   String
+  createdAt      DateTime @default(now())
+
+  intervention Intervention @relation(fields: [interventionId], references: [id], onDelete: Restrict)
+
+  @@index([interventionId])
+  @@map("delivery_evidence")
+}
+
+// ───────────────────────────── Media & stories ─────────────────────────────
+
+enum MediaPhase {
+  BEFORE
+  PROGRESS
+  AFTER
+  OTHER
+}
+
+enum MediaKind {
+  PHOTO
+  VIDEO
+  INTERVIEW_NOTES
+}
+
+enum MediaStatus {
+  UPLOADED
+  APPROVED
+  REJECTED
+  TAKEN_DOWN
+}
+
+model MediaAsset {
+  id                      String      @id @default(cuid())
+  campaignId              String
+  kind                    MediaKind
+  phase                   MediaPhase  @default(OTHER)
+  originalFileId          String // private source file
+  publicFileId            String? // approved edited version, copied to public storage only on approval
+  caption                 String?
+  altText                 String?
+  depictsBeneficiary      Boolean     @default(true)
+  depictsMinor            Boolean     @default(false)
+  safeguardingClearedById String? // required before media depicting a minor is published
+  status                  MediaStatus @default(UPLOADED)
+  uploadedById            String
+  reviewedById            String?
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  campaign Campaign     @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  stories  StoryMedia[]
+
+  @@index([campaignId])
+  @@map("media_assets")
+}
+
+enum StoryType {
+  CASE_STORY
+  PROGRESS_UPDATE
+  VIDEO_SCRIPT
+  PHOTO_CAPTION
+  SPONSOR_ACKNOWLEDGEMENT
+  COMPLETION_REPORT
+  SOCIAL_POST
+}
+
+enum PublicationChannel {
+  CAMPAIGN_PAGE
+  SOCIAL_MEDIA
+  PAID_ADVERTISING
+  SPONSOR_REPORT
+  THIRD_PARTY_BRAND
+  INTERNAL_ONLY
+}
+
+enum StoryStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  UNDER_CONSENT_REVIEW
+  WITHDRAWN
+}
+
+model Story {
+  id           String             @id @default(cuid())
+  campaignId   String
+  type         StoryType
+  channel      PublicationChannel
+  title        String
+  body         String
+  status       StoryStatus        @default(DRAFT)
+  authorId     String
+  approvedById String?
+  approvedAt   DateTime?
+  scheduledFor DateTime?
+  publishedAt  DateTime?
+  externalUrl  String? // where staff posted it on social media
+  metrics      Json? // { views, reactions, shares, recordedAt } entered by staff or official APIs
+  aiAssisted   Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  campaign  Campaign        @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  media     StoryMedia[]
+  revisions StoryRevision[]
+
+  @@index([campaignId, status])
+  @@map("stories")
+}
+
+model StoryMedia {
+  storyId      String
+  mediaAssetId String
+
+  story      Story      @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@id([storyId, mediaAssetId])
+  @@map("story_media")
+}
+
+model StoryRevision {
+  id        String   @id @default(cuid())
+  storyId   String
+  editorId  String
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId])
+  @@map("story_revisions")
+}
+
+// ───────────────────────────── Complaints, safeguarding, risk ─────────────────────────────
+
+enum ComplaintStatus {
+  RECEIVED
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Complaint {
+  id               String          @id @default(cuid())
+  reference        String          @unique
+  submittedById    String?
+  contactName      String
+  contactEmail     String
+  complainantRole  String // APPLICANT, BENEFICIARY, DONOR, SPONSOR, PUBLIC, STAFF
+  category         String // SAFEGUARDING, FRAUD, MISCONDUCT, PRIVACY, PAYMENT, SERVICE, OTHER
+  subject          String
+  description      String
+  relatedReference String?
+  isSafeguarding   Boolean         @default(false)
+  severity         Severity        @default(MEDIUM)
+  status           ComplaintStatus @default(RECEIVED)
+  assignedToId     String?
+  resolution       String?
+  resolvedById     String?
+  resolvedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  safeguarding SafeguardingRecord[]
+
+  @@index([status, isSafeguarding])
+  @@map("complaints")
+}
+
+model SafeguardingRecord {
+  id                  String    @id @default(cuid())
+  complaintId         String?
+  applicationId       String?
+  severity            Severity
+  summary             String
+  actionsTaken        String?
+  restrictPublication Boolean   @default(true)
+  status              String    @default("OPEN") // OPEN, MONITORING, RESOLVED
+  resolution          String?
+  createdById         String
+  resolvedById        String?
+  resolvedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  complaint   Complaint?   @relation(fields: [complaintId], references: [id], onDelete: SetNull)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId])
+  @@map("safeguarding_records")
+}
+
+enum AlertStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+}
+
+// Risk indicators trigger human review only. They never decide eligibility.
+model RiskAlert {
+  id            String      @id @default(cuid())
+  type          String // DUPLICATE_APPLICATION, OVERFUNDING, REPEATED_REFUNDS, AMOUNT_MISMATCH, BUDGET_CHANGE, MISSING_DELIVERY_EVIDENCE, ...
+  severity      Severity
+  details       String
+  applicationId String?
+  campaignId    String?
+  paymentId     String?
+  dedupeKey     String      @unique
+  status        AlertStatus @default(OPEN)
+  reviewedById  String?
+  reviewNote    String?
+  createdAt     DateTime    @default(now())
+  reviewedAt    DateTime?
+
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  campaign    Campaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@map("risk_alerts")
+}
+
+// ───────────────────────────── Platform infrastructure ─────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String // e.g. "application.submit", "safeguarding.view"
+  entityType String
+  entityId   String?
+  metadata   Json? // never contains passwords, tokens, ID documents or applicant narratives
+  ipHash     String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model IdempotencyRecord {
+  key       String   @id // scope:userId:clientKey
+  resultRef String?
+  createdAt DateTime @default(now())
+
+  @@map("idempotency_records")
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT_TO_PROVIDER // accepted by provider – not proof of delivery
+  DELIVERED // only when the provider confirms delivery
+  FAILED
+  SUPPRESSED
+}
+
+model Notification {
+  id                String             @id @default(cuid())
+  userId            String?
+  toEmail           String
+  template          String
+  params            Json // non-confidential template parameters only
+  dedupeKey         String             @unique
+  status            NotificationStatus @default(QUEUED)
+  providerMessageId String?
+  attempts          Int                @default(0)
+  lastError         String?
+  sentAt            DateTime?
+  createdAt         DateTime           @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("notifications")
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  DEAD
+}
+
+model BackgroundJob {
+  id          String    @id @default(cuid())
+  type        String
+  payload     Json
+  dedupeKey   String?   @unique
+  status      JobStatus @default(PENDING)
+  runAt       DateTime  @default(now())
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  lockedAt    DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  finishedAt  DateTime?
+
+  @@index([status, runAt])
+  @@map("background_jobs")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  topic     String
+  message   String
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("contact_messages")
+}
+
+// Development/test only: plays the role of the payment provider's own records for the
+// "sandbox" provider, so server-side verification and reconciliation can be exercised
+// end-to-end without network access. Never used when PAYMENT_PROVIDER=paystack.
+model SandboxTransaction {
+  id          String   @id @default(cuid())
+  reference   String   @unique
+  status      String // pending | success | failed | abandoned
+  amountMinor BigInt
+  currency    String
+  feeMinor    BigInt   @default(0)
+  email       String
+  paidAt      DateTime?
+  refunds     Json     @default("[]")
+  createdAt   DateTime @default(now())
+
+  @@map("sandbox_transactions")
+}
