@@ -50,6 +50,8 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Create e2e database
+        run: PGPASSWORD=postgres createdb -h localhost -U postgres kindspring_e2e_test
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: End-to-end tests

@@ -2,7 +2,8 @@
  * Development seed. Creates reference data (support categories) and, when
  * SEED_DEMO_PASSWORD is set, clearly fictional demo accounts and one demo case.
  *
- * - Refuses to run when NODE_ENV=production.
+ * - Categories are reference data and safe to seed anywhere (idempotent upserts).
+ * - Demo accounts are refused when NODE_ENV=production.
  * - Never contains a hard-coded password: demo accounts use SEED_DEMO_PASSWORD.
  * - All people, places and stories are fictional.
  */
@@ -81,7 +82,6 @@ const CATEGORIES = [
 ];
 
 async function main() {
-  if (process.env.NODE_ENV === "production") throw new Error("Refusing to seed demo data in production.");
   for (const [i, c] of CATEGORIES.entries()) {
     await db.caseCategory.upsert({
       where: { slug: c.slug },
@@ -98,6 +98,8 @@ async function main() {
   console.log(`Seeded ${CATEGORIES.length} support categories.`);
 
   const password = process.env.SEED_DEMO_PASSWORD;
+  if (password && process.env.NODE_ENV === "production")
+    throw new Error("Refusing to create demo accounts in production.");
   if (!password) {
     console.log(
       "SEED_DEMO_PASSWORD not set: skipping demo accounts. Create your first administrator with `npm run admin:create`.",
