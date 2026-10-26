@@ -1,12 +1,11 @@
 import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 import path from "node:path";
 
-const alias = { "server-only": path.resolve(__dirname, "tests/helpers/empty.ts") };
+const alias = { "server-only": path.resolve(__dirname, "tests/helpers/empty.ts"), "@": path.resolve(__dirname, "src") };
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  esbuild: { jsx: "automatic" },
+  resolve: { alias },
   test: {
     projects: [
       {

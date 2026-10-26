@@ -12,7 +12,7 @@ import { enforceRateLimit } from "@/lib/auth/rate-limit";
 import { postJournal } from "@/lib/ledger/journal";
 import { paymentProvider } from "@/lib/payments";
 import type { NormalizedEvent, VerifiedTransaction } from "@/lib/payments/types";
-import { canMovePayment, statusAfterRefund } from "@/lib/workflow/payment";
+import { canMovePayment } from "@/lib/workflow/payment";
 import { CAMPAIGN_TRANSITIONS, DONATABLE_STATUSES, fundingStatusFor } from "@/lib/workflow/campaign";
 import { notify, notifyRole } from "../notifications";
 import { requirePermission, type Actor } from "../actor";

@@ -1,10 +1,9 @@
 "use server";
 
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { SESSION_COOKIE, invalidateSessionToken, sessionCookieOptions } from "@/lib/auth/session";
 import { hashIp } from "@/lib/crypto";
-import { runAction, str, type FormState } from "@/server/action";
+import { runAction, str, withRedirect, type FormState } from "@/server/action";
 import { getActor, getPendingMfaSession } from "@/server/current-user";
 import * as auth from "@/server/services/auth";
 import { invalid } from "@/lib/errors";
@@ -29,8 +28,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
     const next = safeNext(str(fd, "next"), r.staff ? "/staff" : "/account");
     destination = r.mfaRequired ? `/mfa?next=${encodeURIComponent(next)}` : next;
   });
-  if (result?.ok) redirect(destination);
-  return result;
+  return withRedirect(result, destination);
 }
 
 export async function registerAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -42,12 +40,12 @@ export async function registerAction(_: FormState, fd: FormData): Promise<FormSt
   });
 }
 
-export async function logoutAction() {
+export async function logoutAction(): Promise<FormState> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (token) await invalidateSessionToken(token);
   jar.delete(SESSION_COOKIE);
-  redirect("/");
+  return { ok: true, redirectTo: "/" };
 }
 
 export async function forgotPasswordAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -63,8 +61,7 @@ export async function resetPasswordAction(_: FormState, fd: FormData): Promise<F
     if (str(fd, "password") !== str(fd, "confirmPassword")) throw invalid("The passwords do not match.");
     await auth.resetPassword(str(fd, "token"), str(fd, "password"));
   });
-  if (result?.ok) redirect("/login?reset=1");
-  return result;
+  return withRedirect(result, "/login?reset=1");
 }
 
 export async function mfaChallengeAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -77,6 +74,5 @@ export async function mfaChallengeAction(_: FormState, fd: FormData): Promise<Fo
     await auth.verifyMfaForSession(subject, str(fd, "code"));
     next = safeNext(str(fd, "next"), "/staff");
   });
-  if (result?.ok) redirect(next);
-  return result;
+  return withRedirect(result, next);
 }

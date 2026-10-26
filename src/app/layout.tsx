@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { cookies } from "next/headers";
 import { SiteFooter, SiteHeader } from "@/components/layout/site";
+import { Notice } from "@/components/ui/form";
 
 export const metadata: Metadata = {
   title: { default: "KindSpring – Real People. Verified Needs. Lasting Change.", template: "%s · KindSpring" },
@@ -10,7 +12,16 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#123C3A", width: "device-width", initialScale: 1 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+function decodeNotice(v: string | undefined) {
+  try {
+    return v ? decodeURIComponent(v).slice(0, 300) : null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const notice = decodeNotice((await cookies()).get("ks_notice")?.value);
   return (
     <html lang="en-NG">
       <body className="flex min-h-screen flex-col font-sans">
@@ -19,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <SiteHeader />
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+          <Notice message={notice} />
           {children}
         </main>
         <SiteFooter />

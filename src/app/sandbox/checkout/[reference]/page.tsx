@@ -1,8 +1,10 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { formatMoney } from "@/lib/money";
-import { Alert, Button, Card } from "@/components/ui";
+import { Alert, Card } from "@/components/ui";
+import { ActionForm, SubmitButton } from "@/components/ui/form";
+import type { FormState } from "@/server/action";
 import { buildSandboxWebhook, sandboxCompleteCheckout } from "@/lib/payments/sandbox";
 
 export const dynamic = "force-dynamic";
@@ -19,15 +21,14 @@ export default async function SandboxCheckout({ params }: { params: Promise<{ re
   const t = await db.sandboxTransaction.findUnique({ where: { reference } });
   if (!t) notFound();
 
-  async function complete(fd: FormData) {
+  async function complete(outcome: "success" | "failed"): Promise<FormState> {
     "use server";
-    if (env().PAYMENT_PROVIDER !== "sandbox") return;
-    const outcome = fd.get("outcome") === "success" ? "success" : "failed";
+    if (env().PAYMENT_PROVIDER !== "sandbox") return { error: "Sandbox payments are disabled." };
     await sandboxCompleteCheckout(reference, outcome);
     const { raw, signature } = buildSandboxWebhook(outcome === "success" ? "charge.success" : "charge.failed", { reference });
     // Deliver the webhook over HTTP exactly like a provider would.
     await fetch(`${env().APP_BASE_URL}/api/webhooks/sandbox`, { method: "POST", headers: { "Content-Type": "application/json", "x-sandbox-signature": signature }, body: raw }).catch(() => undefined);
-    redirect(`/give/return?reference=${reference}`);
+    return { ok: true, redirectTo: `/give/return?reference=${reference}` };
   }
 
   return (
@@ -38,10 +39,10 @@ export default async function SandboxCheckout({ params }: { params: Promise<{ re
         <p className="text-3xl font-bold text-teal">{formatMoney(t.amountMinor, t.currency)}</p>
         <p className="mt-1 text-sm">Receipt to {t.email}</p>
         {t.status === "pending" ? (
-          <form action={complete} className="mt-4 flex flex-col gap-2">
-            <Button name="outcome" value="success" variant="cta">Simulate successful payment</Button>
-            <Button name="outcome" value="failed" variant="secondary">Simulate failed payment</Button>
-          </form>
+          <div className="mt-4 flex flex-col gap-2">
+            <ActionForm action={complete.bind(null, "success")}><SubmitButton variant="cta" pendingText="Processing…">Simulate successful payment</SubmitButton></ActionForm>
+            <ActionForm action={complete.bind(null, "failed")}><SubmitButton variant="secondary" pendingText="Processing…">Simulate failed payment</SubmitButton></ActionForm>
+          </div>
         ) : (
           <p className="mt-4">This sandbox transaction is already {t.status}.</p>
         )}

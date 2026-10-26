@@ -49,3 +49,15 @@ export function Uploader({ purpose, applicationId, label = "Upload a file", onUp
     </div>
   );
 }
+
+/** Upload control for use inside a form: uploads immediately and submits the new file id as `name`. */
+export function UploadField({ purpose, name = "fileId", label }: { purpose: string; name?: string; label: string }) {
+  const [fileId, setFileId] = useState("");
+  return (
+    <div>
+      <Uploader purpose={purpose} label={label} onUploaded={setFileId} />
+      <input type="hidden" name={name} value={fileId} />
+      {fileId && <p className="text-sm text-teal">This file will be attached when you submit.</p>}
+    </div>
+  );
+}

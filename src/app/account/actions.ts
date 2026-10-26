@@ -1,9 +1,8 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { runAction, str, type FormState } from "@/server/action";
+import { runAction, str, withRedirect, type FormState } from "@/server/action";
 import { getActor } from "@/server/current-user";
 import { requireActor } from "@/server/actor";
 import * as auth from "@/server/services/auth";
@@ -46,6 +45,5 @@ export async function deleteAccountAction(_: FormState, fd: FormData): Promise<F
     await deleteOwnAccount(requireActor(await getActor()));
     (await cookies()).delete(SESSION_COOKIE);
   });
-  if (r?.ok) redirect("/");
-  return r;
+  return withRedirect(r, "/");
 }

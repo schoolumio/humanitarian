@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { formatMoney } from "@/lib/money";
 import { hashIp } from "@/lib/crypto";
@@ -9,7 +9,7 @@ import { CAMPAIGN_STATUS_LABEL, DONATABLE_STATUSES } from "@/lib/workflow/campai
 import { Alert, Badge, Card, Section, formatDate, humanize } from "@/components/ui";
 import { FundingSummary } from "@/components/public/campaign-card";
 import { getActor } from "@/server/current-user";
-import { runAction, type FormState } from "@/server/action";
+import { runAction, withRedirect, type FormState } from "@/server/action";
 import { fundingFigures, getPublicCampaign } from "@/server/services/campaigns";
 import { initiateDonation } from "@/server/services/payments";
 import { GiveForm } from "./give-form";
@@ -37,8 +37,7 @@ export default async function CasePage({ params }: { params: Promise<{ publicId:
       const res = await initiateDonation(await getActor(), publicId, Object.fromEntries(fd), { ipHash: hashIp(h.get("x-forwarded-for")?.split(",")[0] ?? null) });
       url = res.checkoutUrl;
     });
-    if (r?.ok && url) redirect(url);
-    return r;
+    return withRedirect(r, url);
   }
 
   return (

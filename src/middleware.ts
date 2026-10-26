@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
     `form-action 'self' https://checkout.paystack.com`,
     `base-uri 'self'`,
     `object-src 'none'`,
-    ...(dev ? [] : ["upgrade-insecure-requests"]),
+    ...(!dev && process.env.APP_BASE_URL?.startsWith("https://") ? ["upgrade-insecure-requests"] : []),
   ].join("; ");
 
   const headers = new Headers(request.headers);

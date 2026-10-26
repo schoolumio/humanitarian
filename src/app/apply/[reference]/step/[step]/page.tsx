@@ -8,10 +8,9 @@ import { CONSENT_TEXT, OPTIONAL_CONSENTS } from "@/lib/consent";
 import { AppError } from "@/lib/errors";
 import { Alert, Card, DefinitionList, Field, inputClass } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
-import { Autosave } from "@/components/applicant/autosave";
 import { Uploader } from "@/components/applicant/uploader";
 import { requirePageActor } from "@/server/current-user";
-import { runAction, type FormState } from "@/server/action";
+import { runAction, withRedirect, type FormState } from "@/server/action";
 import { CONTACT_METHODS, CONTACT_METHOD_LABEL, STEPS, submissionProblems } from "@/server/validation/application";
 import { getOwnApplication, saveConsents, saveStep, submitApplication } from "@/server/services/applications";
 import { getActor } from "@/server/current-user";
@@ -55,8 +54,7 @@ export default async function StepPage({ params }: { params: Promise<{ reference
       const res = await saveStep(requireActor(await getActor()), reference, step, formToStepInput(step, fd));
       next = res.nextStep;
     });
-    if (r?.ok) redirect(`/apply/${reference}/step/${next}?saved=1`);
-    return r;
+    return withRedirect(r, `/apply/${reference}/step/${next}?saved=1`);
   }
 
   async function saveConsentChoices(_: FormState, fd: FormData): Promise<FormState> {
@@ -66,8 +64,7 @@ export default async function StepPage({ params }: { params: Promise<{ reference
       for (const t of ["ASSESSMENT_DATA_PROCESSING", ...OPTIONAL_CONSENTS] as ConsentType[]) choices[t] = fd.get(t) === "on";
       await saveConsents(requireActor(await getActor()), reference, choices);
     });
-    if (r?.ok) redirect(`/apply/${reference}/step/8`);
-    return r;
+    return withRedirect(r, `/apply/${reference}/step/8`);
   }
 
   async function submit(): Promise<FormState> {
@@ -75,12 +72,10 @@ export default async function StepPage({ params }: { params: Promise<{ reference
     const r = await runAction(async () => {
       await submitApplication(requireActor(await getActor()), reference);
     });
-    if (r?.ok) redirect(`/apply/${reference}?submitted=1`);
-    return r;
+    return withRedirect(r, `/apply/${reference}?submitted=1`);
   }
 
   const categories = step === 2 || step === 8 ? await db.caseCategory.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }) : [];
-  const formId = `step-${step}`;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -138,8 +133,7 @@ export default async function StepPage({ params }: { params: Promise<{ reference
 
         {step === 3 && (
           <div>
-            <Autosave formId={formId} storageKey={`ks-${reference}-3`} />
-            <ActionForm action={save} id={formId}>
+            <ActionForm action={save} autosaveKey={`ks-${reference}-3`}>
               <Field label="What happened?" name="whatHappened" hint="In your own words. Share only what you are comfortable sharing."><textarea id="whatHappened" name="whatHappened" rows={6} defaultValue={app.whatHappened ?? ""} className={inputClass} /></Field>
               <Field label="What assistance do you need?" name="assistanceNeeded"><textarea id="assistanceNeeded" name="assistanceNeeded" rows={4} defaultValue={app.assistanceNeeded ?? ""} className={inputClass} /></Field>
               <Field label="Why is the assistance needed now?" name="whyNow"><textarea id="whyNow" name="whyNow" rows={3} defaultValue={app.whyNow ?? ""} className={inputClass} /></Field>

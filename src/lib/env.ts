@@ -70,6 +70,20 @@ const schema = z
         if (!env[k]) ctx.addIssue({ code: "custom", path: [k], message: "required when STORAGE_DRIVER=s3" });
       }
     }
+    // Real deployments (served over HTTPS in production) must not use development-only drivers.
+    const realDeployment = env.NODE_ENV === "production" && env.APP_BASE_URL.startsWith("https://");
+    if (realDeployment && env.STORAGE_DRIVER === "local") {
+      ctx.addIssue({ code: "custom", path: ["STORAGE_DRIVER"], message: "local storage is for development only; use s3 in deployed environments" });
+    }
+    if (realDeployment && env.MALWARE_SCAN_MODE !== "external") {
+      ctx.addIssue({ code: "custom", path: ["MALWARE_SCAN_MODE"], message: "deployed environments must use an external malware scanner (see docs/security.md)" });
+    }
+    if (env.MALWARE_SCAN_MODE === "external" && !process.env.SCAN_WEBHOOK_SECRET) {
+      ctx.addIssue({ code: "custom", path: ["SCAN_WEBHOOK_SECRET"], message: "required when MALWARE_SCAN_MODE=external" });
+    }
+    if (realDeployment && !env.CRON_SECRET) {
+      ctx.addIssue({ code: "custom", path: ["CRON_SECRET"], message: "required in deployed environments" });
+    }
     if (env.EMAIL_PROVIDER === "resend" && !env.RESEND_API_KEY) {
       ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "required when EMAIL_PROVIDER=resend" });
     }

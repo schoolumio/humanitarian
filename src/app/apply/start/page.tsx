@@ -1,24 +1,31 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ContentPage } from "@/components/public/content";
-import { Button, ButtonLink } from "@/components/ui";
+import { ButtonLink } from "@/components/ui";
+import { ActionForm, SubmitButton } from "@/components/ui/form";
+import { runAction, type FormState } from "@/server/action";
 import { getActor } from "@/server/current-user";
 import { requireActor } from "@/server/actor";
 import { addSelfServiceRole } from "@/server/services/auth";
-import { createDraft } from "@/server/services/applications";
+import { createDraft, listOwnApplications } from "@/server/services/applications";
 
 export const metadata = { title: "Request assistance" };
 export const dynamic = "force-dynamic";
 
-async function start() {
+async function start(): Promise<FormState> {
   "use server";
-  const actor = requireActor(await getActor());
-  if (!actor.roles.includes("APPLICANT")) {
-    await addSelfServiceRole(actor, "APPLICANT");
-    redirect("/apply/start?added=1");
-  }
-  const app = await createDraft(actor);
-  redirect(`/apply/${app.reference}/step/1`);
+  let to = "";
+  const r = await runAction(async () => {
+    const actor = requireActor(await getActor());
+    if (!actor.roles.includes("APPLICANT")) {
+      await addSelfServiceRole(actor, "APPLICANT");
+      to = "/apply/start?added=1";
+      return;
+    }
+    // Resume an unfinished request rather than creating duplicates.
+    const draft = (await listOwnApplications(actor)).find((a) => a.status === "DRAFT");
+    to = draft ? `/apply/${draft.reference}/step/${draft.draftStep}` : `/apply/${(await createDraft(actor)).reference}/step/1`;
+  });
+  return r?.ok ? { ...r, redirectTo: to } : r;
 }
 
 export default async function StartPage() {
@@ -35,9 +42,9 @@ export default async function StartPage() {
       </ul>
       <div className="mt-6 flex flex-wrap gap-3">
         {actor ? (
-          <form action={start}>
-            <Button variant="cta">{actor.roles.includes("APPLICANT") ? "Start my request" : "Continue as an applicant"}</Button>
-          </form>
+          <ActionForm action={start}>
+            <SubmitButton variant="cta" pendingText="Opening…">{actor.roles.includes("APPLICANT") ? "Start or continue my request" : "Continue as an applicant"}</SubmitButton>
+          </ActionForm>
         ) : (
           <>
             <ButtonLink href="/register?role=APPLICANT" variant="cta">Create an account to start</ButtonLink>
