@@ -45,7 +45,7 @@ export default async function SandboxCheckout({ params }: { params: Promise<{ re
       </Alert>
       <Card className="mt-4">
         <p className="text-sm text-muted">Paying</p>
-        <p className="text-3xl font-bold text-teal">{formatMoney(t.amountMinor, t.currency)}</p>
+        <p className="text-3xl font-bold text-brand">{formatMoney(t.amountMinor, t.currency)}</p>
         <p className="mt-1 text-sm">Receipt to {t.email}</p>
         {t.status === "pending" ? (
           <div className="mt-4 flex flex-col gap-2">

@@ -6,18 +6,19 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 }
 
 const buttonStyles = {
-  primary: "bg-teal text-white hover:bg-teal-700",
-  cta: "bg-amber text-charcoal hover:bg-amber-600",
-  secondary: "bg-white text-teal border border-teal hover:bg-teal-50",
-  danger: "bg-coral-700 text-white hover:opacity-90",
-  ghost: "text-teal underline hover:bg-teal-50",
+  primary:
+    "bg-gradient-to-r from-brand to-brand-600 text-white shadow-[0_8px_20px_-8px_rgb(200_23_79/0.6)] hover:from-brand-700 hover:to-brand",
+  cta: "bg-sun text-ink shadow-[0_8px_20px_-8px_rgb(245_167_10/0.7)] hover:bg-sun-600",
+  secondary: "bg-white text-brand border-2 border-brand/25 hover:border-brand hover:bg-brand-50",
+  danger: "bg-danger-700 text-white hover:opacity-90",
+  ghost: "text-brand underline hover:bg-brand-50",
 } as const;
 
 export type ButtonVariant = keyof typeof buttonStyles;
 
 export function buttonClass(variant: ButtonVariant = "primary", extra?: string) {
   return cx(
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2 font-semibold no-underline transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+    "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2 font-bold no-underline transition-all disabled:cursor-not-allowed disabled:opacity-60",
     buttonStyles[variant],
     extra,
   );
@@ -40,12 +41,7 @@ export function ButtonLink({
 }
 
 export function Card({ className, ...props }: ComponentProps<"div">) {
-  return (
-    <div
-      className={cx("rounded-[var(--radius-card)] border border-line bg-white p-5", className)}
-      {...props}
-    />
-  );
+  return <div className={cx("card p-5 sm:p-6", className)} {...props} />;
 }
 
 export function PageHeader({
@@ -58,9 +54,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-2xl sm:text-3xl">{title}</h1>
+        <span aria-hidden="true" className="mb-3 block h-1.5 w-14 rounded-full bg-sunrise" />
+        <h1 className="text-3xl sm:text-4xl">{title}</h1>
         {description && <p className="mt-1 max-w-3xl text-muted">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -69,11 +66,11 @@ export function PageHeader({
 }
 
 const tones = {
-  neutral: "bg-ivory text-charcoal border-line",
-  info: "bg-teal-50 text-teal border-teal/30",
-  success: "bg-sage text-teal border-teal/30",
-  warning: "bg-amber/25 text-charcoal border-amber-600/50",
-  danger: "bg-coral/15 text-coral-700 border-coral/50",
+  neutral: "bg-[#f4f0fa] text-ink border-[#e3dcef]",
+  info: "bg-grape-50 text-grape border-grape/25",
+  success: "bg-leaf-50 text-leaf border-leaf/30",
+  warning: "bg-sun-50 text-[#7a4a00] border-sun-600/50",
+  danger: "bg-brand-50 text-danger-700 border-danger/40",
 } as const;
 
 export type Tone = keyof typeof tones;
@@ -81,7 +78,7 @@ export type Tone = keyof typeof tones;
 /** Status badges always carry text (never colour alone). */
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span className={cx("inline-block rounded border px-2 py-0.5 text-sm font-medium", tones[tone])}>
+    <span className={cx("inline-block rounded-full border px-3 py-0.5 text-sm font-bold", tones[tone])}>
       {children}
     </span>
   );
@@ -97,7 +94,7 @@ export function Alert({
   children?: ReactNode;
 }) {
   return (
-    <div role={tone === "danger" ? "alert" : "status"} className={cx("rounded-md border p-4", tones[tone])}>
+    <div role={tone === "danger" ? "alert" : "status"} className={cx("rounded-2xl border p-4", tones[tone])}>
       {title && <p className="font-semibold">{title}</p>}
       {children && <div className={title ? "mt-1" : ""}>{children}</div>}
     </div>
@@ -114,8 +111,24 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-white p-8 text-center">
-      <p className="text-lg font-semibold text-teal">{title}</p>
+    <div className="rounded-[var(--radius-card)] border-2 border-dashed border-brand/20 bg-white/80 p-8 text-center sm:p-10">
+      <span
+        aria-hidden="true"
+        className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-2xl"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-7 w-7 text-brand"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 20s-8-4.6-8-10.7C4 6.4 6.2 4.5 8.6 4.5c1.6 0 2.7.8 3.4 1.9.7-1.1 1.8-1.9 3.4-1.9 2.4 0 4.6 1.9 4.6 4.8C20 15.4 12 20 12 20Z" />
+        </svg>
+      </span>
+      <p className="font-[family-name:var(--font-display)] text-lg font-bold text-ink">{title}</p>
       {children && <div className="mx-auto mt-2 max-w-xl text-muted">{children}</div>}
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -135,20 +148,19 @@ export function Stat({
 }) {
   const body = (
     <>
-      <span className="block text-sm text-muted">{label}</span>
-      <span className="mt-1 block text-2xl font-bold text-teal">{value}</span>
+      <span className="block text-sm font-semibold text-muted">{label}</span>
+      <span className="mt-1 block font-[family-name:var(--font-display)] text-3xl font-extrabold text-brand">
+        {value}
+      </span>
       {hint && <span className="mt-1 block text-sm text-muted">{hint}</span>}
     </>
   );
   return href ? (
-    <Link
-      href={href}
-      className="block rounded-[var(--radius-card)] border border-line bg-white p-4 no-underline hover:border-teal"
-    >
+    <Link href={href} className="card lift block border-l-4 border-l-brand p-5 no-underline">
       {body}
     </Link>
   ) : (
-    <div className="rounded-[var(--radius-card)] border border-line bg-white p-4">{body}</div>
+    <div className="card border-l-4 border-l-sun p-5">{body}</div>
   );
 }
 
@@ -157,14 +169,17 @@ export function Progress({ percent, label }: { percent: number; label: string })
   return (
     <div>
       <div
-        className="h-3 w-full overflow-hidden rounded-full bg-sage"
+        className="h-3.5 w-full overflow-hidden rounded-full bg-brand-50"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
         aria-label={label}
       >
-        <div className="h-full rounded-full bg-teal" style={{ width: `${percent}%` }} />
+        <div
+          className="h-full rounded-full bg-sunrise"
+          style={{ width: `${Math.max(percent, percent > 0 ? 3 : 0)}%` }}
+        />
       </div>
     </div>
   );
@@ -222,13 +237,17 @@ export function DataTable<T>({
   caption?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-white">
+    <div className="card overflow-hidden">
       <table className="w-full border-collapse text-left text-[0.95rem]">
         {caption && <caption className="sr-only">{caption}</caption>}
-        <thead className="hidden bg-teal-50 md:table-header-group">
+        <thead className="hidden bg-[#f6f1fb] md:table-header-group">
           <tr>
             {columns.map((c) => (
-              <th key={c.header} scope="col" className="px-3 py-2 font-semibold text-teal">
+              <th
+                key={c.header}
+                scope="col"
+                className="px-4 py-3 text-sm font-bold uppercase tracking-wide text-grape"
+              >
                 {c.header}
               </th>
             ))}
@@ -243,7 +262,7 @@ export function DataTable<T>({
               {columns.map((c) => (
                 <td
                   key={c.header}
-                  className={cx("flex gap-2 py-1 md:table-cell md:px-3 md:py-2 md:align-top", c.className)}
+                  className={cx("flex gap-2 py-1 md:table-cell md:px-4 md:py-3 md:align-top", c.className)}
                 >
                   <span className="w-32 shrink-0 text-sm text-muted md:hidden">{c.header}</span>
                   <span className="min-w-0 break-words">{c.cell(r)}</span>
@@ -272,7 +291,7 @@ export function Field({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={name} className="font-semibold">
+      <label htmlFor={name} className="font-bold">
         {label}
       </label>
       {hint && (
@@ -282,7 +301,7 @@ export function Field({
       )}
       {children}
       {error && (
-        <p id={`${name}-error`} className="text-sm font-medium text-coral-700">
+        <p id={`${name}-error`} className="text-sm font-medium text-danger-700">
           {error}
         </p>
       )}
@@ -291,7 +310,7 @@ export function Field({
 }
 
 export const inputClass =
-  "min-h-11 w-full rounded-md border border-charcoal/40 bg-white px-3 py-2 text-charcoal placeholder:text-muted/70 aria-[invalid=true]:border-coral-700";
+  "min-h-12 w-full rounded-xl border-2 border-[#ddd3e8] bg-white px-4 py-2 text-ink placeholder:text-muted/70 transition-colors focus:border-brand focus:outline-none focus-visible:outline-2 focus-visible:outline-grape aria-[invalid=true]:border-danger-700";
 
 export function DefinitionList({ items }: { items: [string, ReactNode][] }) {
   return (
@@ -309,7 +328,7 @@ export function DefinitionList({ items }: { items: [string, ReactNode][] }) {
 export function Section({ title, children, id }: { title: string; children: ReactNode; id?: string }) {
   return (
     <section aria-labelledby={id ? `${id}-h` : undefined} className="mt-8">
-      <h2 id={id ? `${id}-h` : undefined} className="mb-3 text-xl">
+      <h2 id={id ? `${id}-h` : undefined} className="mb-4 text-2xl">
         {title}
       </h2>
       {children}

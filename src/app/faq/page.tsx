@@ -38,7 +38,7 @@ export default function FaqPage() {
     <ContentPage title="Frequently asked questions">
       {FAQ.map(([q, a]) => (
         <details key={q} className="mb-3 rounded-[var(--radius-card)] border border-line bg-white p-4">
-          <summary className="cursor-pointer font-semibold text-teal">{q}</summary>
+          <summary className="cursor-pointer font-semibold text-brand">{q}</summary>
           <p>{a}</p>
         </details>
       ))}

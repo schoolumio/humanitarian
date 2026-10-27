@@ -118,7 +118,7 @@ export function ActionForm({
           ref={summaryRef}
           tabIndex={-1}
           role="alert"
-          className="rounded-md border border-coral/50 bg-coral/10 p-3 text-coral-700"
+          className="rounded-2xl border border-danger/40 bg-brand-50 p-4 text-danger-700"
         >
           <p className="font-semibold">{state.error}</p>
           {state.fieldErrors && Object.keys(state.fieldErrors).length > 0 && (
@@ -131,7 +131,10 @@ export function ActionForm({
         </div>
       )}
       {state?.ok && !state.message && successMessage && (
-        <div role="status" className="rounded-md border border-teal/30 bg-sage p-3 text-teal">
+        <div
+          role="status"
+          className="rounded-2xl border border-leaf/30 bg-leaf-50 p-4 font-semibold text-leaf"
+        >
           {successMessage}
         </div>
       )}
@@ -157,7 +160,7 @@ export function Notice({ initial }: { initial: string | null }) {
   return (
     <div role="status" aria-live="polite">
       {message && (
-        <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-teal/30 bg-sage p-3 text-teal">
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-2xl border border-leaf/30 bg-leaf-50 p-4 font-semibold text-leaf">
           <span>{message}</span>
           <button
             type="button"

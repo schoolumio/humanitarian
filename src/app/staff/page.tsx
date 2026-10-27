@@ -14,7 +14,7 @@ export default async function StaffDashboard() {
         title={`Welcome, ${actor.name.split(" ")[0]}`}
         description="Live figures from the database. Select a figure to open the related queue."
       />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 [&>*:nth-child(4n+2)]:border-l-sea [&>*:nth-child(4n+3)]:border-l-grape [&>*:nth-child(4n+4)]:border-l-sun-600">
         {p("application.view_all") && (
           <Stat
             label="Applications awaiting review"

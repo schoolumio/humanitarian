@@ -158,15 +158,15 @@ export default async function InterventionPage({ params }: { params: Promise<{ i
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <p className="text-sm text-muted">Approved budget</p>
-          <p className="text-xl font-bold text-teal">{formatMoney(iv.approvedBudgetMinor)}</p>
+          <p className="text-xl font-bold text-brand">{formatMoney(iv.approvedBudgetMinor)}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Restricted funds available</p>
-          <p className="text-xl font-bold text-teal">{formatMoney(balance)}</p>
+          <p className="text-xl font-bold text-brand">{formatMoney(balance)}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Paid to suppliers</p>
-          <p className="text-xl font-bold text-teal">
+          <p className="text-xl font-bold text-brand">
             {formatMoney(
               iv.disbursements.filter((d) => d.status === "PAID").reduce((s, d) => s + d.amountMinor, 0n),
             )}

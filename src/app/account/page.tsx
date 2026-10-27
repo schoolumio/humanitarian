@@ -77,7 +77,7 @@ export default async function AccountPage() {
                 Add KindSpring to an authenticator app (for example Google Authenticator or Microsoft
                 Authenticator) using this setup key, then enter the 6-digit code.
               </p>
-              <p className="my-3 break-all rounded bg-ivory p-3 font-mono text-lg" aria-label="Setup key">
+              <p className="my-3 break-all rounded bg-cream p-3 font-mono text-lg" aria-label="Setup key">
                 {pendingSecret.match(/.{1,4}/g)?.join(" ")}
               </p>
               <p className="mb-3 text-sm text-muted break-all">

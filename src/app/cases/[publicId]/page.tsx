@@ -13,6 +13,8 @@ import { runAction, withRedirect, type FormState } from "@/server/action";
 import { fundingFigures, getPublicCampaign } from "@/server/services/campaigns";
 import { initiateDonation } from "@/server/services/payments";
 import { GiveForm } from "./give-form";
+import { BRAND } from "@/lib/brand";
+import { ShieldIcon, categoryStyle } from "@/components/brand/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +55,26 @@ export default async function CasePage({ params }: { params: Promise<{ publicId:
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
       <article>
+        <div className="bg-sunrise relative mb-6 flex h-40 items-center justify-center overflow-hidden rounded-[var(--radius-card)] sm:h-52">
+          <span aria-hidden="true" className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-white/20" />
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-14 right-10 h-44 w-44 rounded-full bg-white/15"
+          />
+          {(() => {
+            const { Icon, ink } = categoryStyle(c.category.slug);
+            return (
+              <span
+                className={`relative flex h-24 w-24 items-center justify-center rounded-[2rem] bg-white shadow-xl ${ink}`}
+              >
+                <Icon className="h-14 w-14" />
+              </span>
+            );
+          })()}
+          <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-sm font-extrabold text-leaf shadow">
+            <ShieldIcon className="h-4 w-4" /> Verified by {BRAND.name} staff
+          </span>
+        </div>
         <div className="mb-3 flex flex-wrap gap-2">
           <Badge tone="info">{c.category.name}</Badge>
           <Badge tone={c.status === "COMPLETED" ? "success" : "neutral"}>
@@ -60,8 +82,8 @@ export default async function CasePage({ params }: { params: Promise<{ publicId:
           </Badge>
           <Badge tone="success">Verified {formatDate(c.verifiedAt)}</Badge>
         </div>
-        <h1 className="text-3xl">{c.title}</h1>
-        <p className="mt-1 text-muted">{c.locationLabel}</p>
+        <h1 className="text-3xl sm:text-4xl">{c.title}</h1>
+        <p className="mt-1 font-semibold text-muted">{c.locationLabel}</p>
         <div className="prose-ks mt-4 whitespace-pre-line">{c.summary}</div>
 
         <Section title="What the support will provide">
@@ -76,7 +98,7 @@ export default async function CasePage({ params }: { params: Promise<{ publicId:
                 <span className="font-semibold">{formatMoney(l.amountMinor, c.currency)}</span>
               </li>
             ))}
-            <li className="flex justify-between gap-4 bg-teal-50 px-4 py-2 font-bold">
+            <li className="flex justify-between gap-4 bg-brand-50 px-4 py-2 font-bold">
               <span>Funding target</span>
               <span>{formatMoney(c.targetAmountMinor, c.currency)}</span>
             </li>
@@ -212,7 +234,7 @@ export default async function CasePage({ params }: { params: Promise<{ publicId:
         </Card>
         {c.acceptsSponsorship && (
           <Card>
-            <p className="font-semibold text-teal">Sponsor this intervention</p>
+            <p className="font-semibold text-brand">Sponsor this intervention</p>
             <p className="mt-1 text-sm">
               Businesses and foundations can fund the whole intervention or provide goods and services.
             </p>

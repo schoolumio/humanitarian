@@ -118,19 +118,19 @@ export default async function StaffCampaign({ params }: { params: Promise<{ id: 
       <div className="grid gap-4 sm:grid-cols-4">
         <Card>
           <p className="text-sm text-muted">Target</p>
-          <p className="text-xl font-bold text-teal">{formatMoney(c.targetAmountMinor)}</p>
+          <p className="text-xl font-bold text-brand">{formatMoney(c.targetAmountMinor)}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Confirmed (net of refunds)</p>
-          <p className="text-xl font-bold text-teal">{formatMoney(net)}</p>
+          <p className="text-xl font-bold text-brand">{formatMoney(net)}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Restricted fund balance (ledger)</p>
-          <p className="text-xl font-bold text-teal">{formatMoney(balance)}</p>
+          <p className="text-xl font-bold text-brand">{formatMoney(balance)}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Sponsor pledges (not received)</p>
-          <p className="text-xl font-bold text-teal">
+          <p className="text-xl font-bold text-brand">
             {formatMoney(
               c.agreements
                 .filter((a) => ["APPROVED", "SIGNED"].includes(a.status))

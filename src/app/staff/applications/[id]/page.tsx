@@ -116,7 +116,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
         ))}
 
       {myAssignment && !myAssignment.noConflictDeclared && (
-        <Card className="mb-4 border-amber-600">
+        <Card className="mb-4 border-sun-600">
           <h2 className="text-lg">Conflict of interest declaration</h2>
           <p className="mt-1">
             Before working on this case, confirm you have no personal, family, financial or community
@@ -231,7 +231,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
               if (!list.length) return null;
               return (
                 <div key={stage} className="mb-4">
-                  <h3 className="mb-2 font-semibold text-teal">{STAGE_LABEL[stage]}</h3>
+                  <h3 className="mb-2 font-semibold text-brand">{STAGE_LABEL[stage]}</h3>
                   <ul className="flex flex-col gap-2">
                     {list.map((t) => (
                       <li key={t.id} className="rounded border border-line bg-white p-3">
@@ -260,7 +260,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
                         )}
                         {!closed && (can("application.triage") || myAssignment) && (
                           <details className="mt-2">
-                            <summary className="cursor-pointer text-sm text-teal">Update</summary>
+                            <summary className="cursor-pointer text-sm text-brand">Update</summary>
                             <ActionForm action={A.taskAction.bind(null, app.id, t.id)} className="mt-2">
                               <select
                                 name="status"
@@ -310,7 +310,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
                     ["REQUESTED", "SCHEDULED"].includes(v.status) &&
                     (can("application.triage") || myAssignment) && (
                       <details className="mt-2">
-                        <summary className="cursor-pointer text-sm text-teal">Update visit</summary>
+                        <summary className="cursor-pointer text-sm text-brand">Update visit</summary>
                         <ActionForm
                           action={A.fieldVisitUpdateAction.bind(null, app.id, v.id)}
                           className="mt-2"
@@ -369,7 +369,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
               ["VERIFICATION_IN_PROGRESS", "FIELD_VISIT_REQUIRED", "INITIAL_REVIEW"].includes(app.status) &&
               (can("application.triage") || myAssignment) && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer font-semibold text-teal">Request a field visit</summary>
+                  <summary className="cursor-pointer font-semibold text-brand">Request a field visit</summary>
                   <Card className="mt-2">
                     <ActionForm action={A.fieldVisitRequestAction.bind(null, app.id)}>
                       <Field label="Why is a visit justified?" name="fv-reason">
@@ -444,7 +444,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
               can("investigation.record") &&
               (myAssignment?.noConflictDeclared || can("application.triage")) && (
                 <details>
-                  <summary className="cursor-pointer font-semibold text-teal">
+                  <summary className="cursor-pointer font-semibold text-brand">
                     Submit investigation report
                   </summary>
                   <Card className="mt-2">
@@ -504,7 +504,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
                 "INITIAL_REVIEW",
               ].includes(app.status) && (
                 <details className="mb-3">
-                  <summary className="cursor-pointer font-semibold text-teal">
+                  <summary className="cursor-pointer font-semibold text-brand">
                     Record an independent review
                   </summary>
                   <Card className="mt-2">
@@ -530,7 +530,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
               )}
             {can("case.decide") && !closed && APPLICATION_TRANSITIONS[app.status]?.DECLINED !== undefined && (
               <details>
-                <summary className="cursor-pointer font-semibold text-teal">Record final decision</summary>
+                <summary className="cursor-pointer font-semibold text-brand">Record final decision</summary>
                 <Card className="mt-2">
                   <ActionForm action={A.decisionAction.bind(null, app.id)}>
                     <p className="text-sm text-muted">
@@ -571,7 +571,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
             )}
             {can("case.decide") && app.status === "DECLINED" && (
               <details>
-                <summary className="cursor-pointer font-semibold text-teal">Reopen case</summary>
+                <summary className="cursor-pointer font-semibold text-brand">Reopen case</summary>
                 <Card className="mt-2">
                   <ActionForm action={A.reopenAction.bind(null, app.id)}>
                     <Field label="Justification" name="reopen">
@@ -623,7 +623,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
               {infoRequests.length > 0 && (
                 <ul className="mt-3 flex flex-col gap-2 text-sm">
                   {infoRequests.map((r) => (
-                    <li key={r.id} className="rounded bg-ivory p-2">
+                    <li key={r.id} className="rounded bg-cream p-2">
                       <p>{r.message}</p>
                       <p className="mt-1 text-muted">
                         {r.respondedAt ? `Reply: ${r.responseText}` : "Awaiting reply"}
@@ -687,7 +687,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
             </ul>
             {can("consent.record_on_behalf") && (
               <details className="mt-3">
-                <summary className="cursor-pointer text-sm text-teal">Record consent given offline</summary>
+                <summary className="cursor-pointer text-sm text-brand">Record consent given offline</summary>
                 <ActionForm action={A.consentOnBehalfAction.bind(null, app.id)} className="mt-2">
                   <select name="type" className={inputClass} aria-label="Consent type">
                     {(Object.keys(CONSENT_TEXT) as ConsentType[]).map((t) => (
@@ -748,7 +748,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
                 </p>
               ))}
               <details className="mt-2">
-                <summary className="cursor-pointer text-sm text-teal">Open a safeguarding record</summary>
+                <summary className="cursor-pointer text-sm text-brand">Open a safeguarding record</summary>
                 <ActionForm action={A.safeguardingAction.bind(null, app.id)} className="mt-2">
                   <select name="severity" className={inputClass} aria-label="Severity">
                     <option>LOW</option>

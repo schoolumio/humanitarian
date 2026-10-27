@@ -121,7 +121,7 @@ export default async function ComplaintPage({ params }: { params: Promise<{ id: 
             </Card>
           ))}
           <details>
-            <summary className="cursor-pointer font-semibold text-teal">Open a safeguarding record</summary>
+            <summary className="cursor-pointer font-semibold text-brand">Open a safeguarding record</summary>
             <Card className="mt-2">
               <ActionForm action={safeguard}>
                 <select name="severity" className={inputClass} aria-label="Severity">

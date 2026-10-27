@@ -109,7 +109,7 @@ export default async function MediaWorkspace() {
           <EmptyState title="No stories yet" />
         )}
         <details className="mt-3">
-          <summary className="cursor-pointer font-semibold text-teal">Draft a new story or update</summary>
+          <summary className="cursor-pointer font-semibold text-brand">Draft a new story or update</summary>
           <Card className="mt-2">
             <ActionForm action={newStory}>
               <Field label="Case" name="campaignId">
@@ -237,7 +237,7 @@ export default async function MediaWorkspace() {
                       )}
                     {a.status !== "TAKEN_DOWN" && (
                       <details>
-                        <summary className="cursor-pointer text-sm text-coral-700">Take down</summary>
+                        <summary className="cursor-pointer text-sm text-danger-700">Take down</summary>
                         <ActionForm action={takedown.bind(null, a.id)}>
                           <input
                             name="reason"
@@ -258,7 +258,7 @@ export default async function MediaWorkspace() {
           <EmptyState title="No media uploaded" />
         )}
         <details className="mt-3">
-          <summary className="cursor-pointer font-semibold text-teal">Upload media</summary>
+          <summary className="cursor-pointer font-semibold text-brand">Upload media</summary>
           <Card className="mt-2">
             <ActionForm action={addAsset} resetOnSuccess>
               <Field label="Case" name="m-campaign">

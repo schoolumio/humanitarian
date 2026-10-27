@@ -65,15 +65,15 @@ export default async function AgreementPage({ params }: { params: Promise<{ id: 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <p className="text-sm text-muted">Pledged (not money received)</p>
-          <p className="text-xl font-bold text-teal">{formatMoney(a.pledgedAmountMinor)}</p>
+          <p className="text-xl font-bold text-brand">{formatMoney(a.pledgedAmountMinor)}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Confirmed payments</p>
-          <p className="text-xl font-bold text-teal">{formatMoney(paid)}</p>
+          <p className="text-xl font-bold text-brand">{formatMoney(paid)}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Spent on intervention (all funding sources)</p>
-          <p className="text-xl font-bold text-teal">
+          <p className="text-xl font-bold text-brand">
             {formatMoney(iv?.disbursements.reduce((s, d) => s + d.amountMinor, 0n) ?? 0n)}
           </p>
         </Card>

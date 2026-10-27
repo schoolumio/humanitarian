@@ -29,12 +29,21 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   return (
     <div className="grid gap-6 lg:grid-cols-[13rem_1fr]">
       <nav aria-label="Staff" className="lg:sticky lg:top-4 lg:self-start">
-        <details className="rounded-[var(--radius-card)] border border-line bg-white" open>
-          <summary className="cursor-pointer p-3 font-semibold text-teal lg:hidden">Staff menu</summary>
+        <details className="card overflow-hidden" open>
+          <summary className="cursor-pointer p-4 font-bold text-ink lg:hidden">Staff menu</summary>
+          <p
+            aria-hidden="true"
+            className="bg-dusk hidden px-4 py-3 text-sm font-extrabold uppercase tracking-wider text-white lg:block"
+          >
+            Staff workspace
+          </p>
           <ul className="flex flex-col p-2">
             {items.map((i) => (
               <li key={i.href}>
-                <Link href={i.href} className="block rounded px-3 py-2 no-underline hover:bg-teal-50">
+                <Link
+                  href={i.href}
+                  className="block rounded-xl px-3 py-2 font-semibold text-ink no-underline hover:bg-brand-50 hover:text-brand"
+                >
                   {i.label}
                 </Link>
               </li>

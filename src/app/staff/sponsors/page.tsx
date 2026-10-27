@@ -113,7 +113,7 @@ export default async function StaffSponsors() {
                     </p>
                     {o.reviewNotes && <p className="mt-1 text-sm">Review: {o.reviewNotes}</p>}
                     <details className="mt-2">
-                      <summary className="cursor-pointer text-sm text-teal">Review</summary>
+                      <summary className="cursor-pointer text-sm text-brand">Review</summary>
                       <ActionForm action={review.bind(null, o.id)} className="mt-2">
                         <select name="outcome" className={inputClass} aria-label="Outcome">
                           <option value="APPROVED">Approve</option>

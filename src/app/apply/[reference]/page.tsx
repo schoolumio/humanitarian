@@ -135,7 +135,7 @@ export default async function ApplicationStatusPage({
                 <p className="text-sm text-muted">{formatDate(r.createdAt, true)}</p>
                 <p className="mt-1 whitespace-pre-line">{r.message}</p>
                 {r.respondedAt ? (
-                  <div className="mt-3 rounded bg-ivory p-3">
+                  <div className="mt-3 rounded bg-cream p-3">
                     <p className="text-sm text-muted">Your reply · {formatDate(r.respondedAt, true)}</p>
                     <p className="whitespace-pre-line">{r.responseText}</p>
                   </div>

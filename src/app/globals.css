@@ -1,21 +1,47 @@
 @import "tailwindcss";
 
-/* KindSpring design tokens. Text colours are chosen for WCAG 2.2 AA contrast on ivory/white. */
+/*
+ * KindSpring visual identity – warm, hopeful and colourful.
+ * Every text/background pairing used for words meets WCAG 2.2 AA contrast; the brighter
+ * hues (sun, coral glow, sky) are used for illustration, highlights and large display only.
+ */
 @theme {
-  --color-teal: #123c3a;
-  --color-teal-700: #1d5552;
-  --color-teal-50: #e8f0ef;
-  --color-amber: #f2b544;
-  --color-amber-600: #d99a22;
-  --color-ivory: #f7f5ef;
-  --color-charcoal: #252b2a;
-  --color-muted: #4f5856; /* 7.1:1 on white */
-  --color-sage: #dde9df;
-  --color-coral: #d96c4f; /* decorative / large text only */
-  --color-coral-700: #a3412a; /* error text, 6.1:1 on white */
-  --color-line: #d8d4c8;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
-  --radius-card: 0.5rem;
+  /* Love – primary brand (raspberry rose). White text on brand = 6.0:1 */
+  --color-brand: #c8174f;
+  --color-brand-700: #a3123f;
+  --color-brand-600: #e0245e;
+  --color-brand-100: #ffe0ea;
+  --color-brand-50: #fff1f5;
+  /* Joy – sunshine. Use dark (ink) text on it */
+  --color-sun: #ffc23d;
+  --color-sun-600: #f5a70a;
+  --color-sun-50: #fff8e6;
+  /* Hope – ocean teal. White text = 5.4:1 */
+  --color-sea: #0f766e;
+  --color-sea-600: #0d9488;
+  --color-sea-50: #e6f7f4;
+  /* Generosity – violet. White text = 7.1:1 */
+  --color-grape: #6d28d9;
+  --color-grape-50: #f3edff;
+  /* Growth – leaf green */
+  --color-leaf: #15803d;
+  --color-leaf-50: #e8f8ee;
+  /* Warmth – coral (decorative) */
+  --color-coral: #ff7a59;
+  --color-sky: #38bdf8;
+  /* Neutrals */
+  --color-ink: #23173d; /* deep plum – headings & body, 15:1 on white */
+  --color-muted: #574f6b; /* 7.4:1 on white */
+  --color-cream: #fffaf4;
+  --color-line: #ece4dc;
+  --color-danger: #e5484d;
+  --color-danger-700: #b42318; /* 6.3:1 on white */
+
+  --font-sans: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Poppins", "Nunito", system-ui, sans-serif;
+  --radius-card: 1.25rem;
+  --shadow-soft: 0 1px 2px rgb(35 23 61 / 0.06), 0 8px 24px -8px rgb(35 23 61 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(35 23 61 / 0.06), 0 18px 40px -12px rgb(200 23 79 / 0.25);
 }
 
 @layer base {
@@ -23,25 +49,28 @@
     -webkit-text-size-adjust: 100%;
   }
   body {
-    background: var(--color-ivory);
-    color: var(--color-charcoal);
+    background: var(--color-cream);
+    color: var(--color-ink);
     font-size: 1.0625rem;
-    line-height: 1.6;
+    line-height: 1.65;
   }
   h1,
   h2,
   h3 {
-    color: var(--color-teal);
-    line-height: 1.25;
+    font-family: var(--font-display);
+    color: var(--color-ink);
+    line-height: 1.2;
     font-weight: 700;
+    letter-spacing: -0.01em;
   }
   a {
-    color: var(--color-teal);
+    color: var(--color-brand);
     text-decoration: underline; /* links must not rely on colour alone (WCAG 1.4.1) */
+    text-decoration-thickness: 1.5px;
     text-underline-offset: 3px;
   }
   :focus-visible {
-    outline: 3px solid var(--color-amber-600);
+    outline: 3px solid var(--color-grape);
     outline-offset: 2px;
   }
   input,
@@ -66,17 +95,32 @@
     margin: 0.75rem 0;
   }
   .prose-ks h2 {
-    font-size: 1.35rem;
-    margin: 1.75rem 0 0.5rem;
+    font-size: 1.4rem;
+    margin: 2rem 0 0.5rem;
   }
   .prose-ks h3 {
     font-size: 1.1rem;
     margin: 1.25rem 0 0.4rem;
   }
   .prose-ks ul {
-    list-style: disc;
-    padding-left: 1.4rem;
+    list-style: none;
+    padding-left: 0;
     margin: 0.75rem 0;
+  }
+  .prose-ks ul > li {
+    position: relative;
+    padding-left: 1.6rem;
+    margin: 0.45rem 0;
+  }
+  .prose-ks ul > li::before {
+    content: "";
+    position: absolute;
+    left: 0.15rem;
+    top: 0.55em;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--color-brand-600), var(--color-sun));
   }
   .prose-ks ol {
     list-style: decimal;
@@ -84,6 +128,55 @@
     margin: 0.75rem 0;
   }
   .prose-ks li {
-    margin: 0.3rem 0;
+    margin: 0.35rem 0;
+  }
+
+  /* Signature gradients */
+  .bg-sunrise {
+    background: linear-gradient(120deg, #c8174f 0%, #e5484d 38%, #ff7a59 68%, #ffc23d 100%);
+  }
+  /* For bands that carry white text: every stop keeps white text at AA contrast. */
+  .bg-sunrise-deep {
+    background: linear-gradient(120deg, #7a1240 0%, #c8174f 50%, #c2410c 100%);
+  }
+  .bg-dusk {
+    background: linear-gradient(172deg, #23173d 0%, #3b1d6e 50%, #7a1240 100%);
+  }
+  .bg-ocean {
+    background: linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #38bdf8 100%);
+  }
+  .bg-blush {
+    background:
+      radial-gradient(60rem 30rem at 100% 0%, #ffe0ea 0%, transparent 60%),
+      radial-gradient(50rem 30rem at 0% 100%, #fff1d6 0%, transparent 55%), var(--color-cream);
+  }
+  .text-gradient {
+    background: linear-gradient(90deg, #c8174f, #e5484d 45%, #f5a70a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Hand-drawn style underline for highlighted words */
+  .squiggle {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 12'%3E%3Cpath d='M2 8c18-6 30-6 46 0s30 6 46 0 22-5 24-3' fill='none' stroke='%23ffc23d' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: 100% 0.45em;
+    background-position: 0 100%;
+    padding-bottom: 0.12em;
+  }
+  .card {
+    border-radius: var(--radius-card);
+    background: #fff;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--color-line);
+  }
+  .lift {
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lift);
   }
 }

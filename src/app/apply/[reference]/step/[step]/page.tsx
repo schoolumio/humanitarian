@@ -103,7 +103,7 @@ export default async function StepPage({ params }: { params: Promise<{ reference
                 <Link
                   href={`/apply/${reference}/step/${s.n}`}
                   aria-current={s.n === step ? "step" : undefined}
-                  className={`inline-block rounded px-2 py-1 no-underline ${s.n === step ? "bg-teal text-white" : "bg-sage text-teal"}`}
+                  className={`inline-block rounded px-2 py-1 no-underline ${s.n === step ? "bg-brand text-white" : "bg-leaf-50 text-brand"}`}
                 >
                   {s.n}. {s.title}
                 </Link>
@@ -479,7 +479,7 @@ export default async function StepPage({ params }: { params: Promise<{ reference
               with sponsors are <strong>separate choices</strong>. Saying no to any of them does not affect
               whether we can help you. You can change these later.
             </p>
-            <label className="flex items-start gap-3 rounded border border-teal p-3">
+            <label className="flex items-start gap-3 rounded border border-brand p-3">
               <input
                 type="checkbox"
                 name="ASSESSMENT_DATA_PROCESSING"

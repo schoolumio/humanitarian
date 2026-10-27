@@ -33,7 +33,7 @@ export function GiveForm({
               key={p}
               onClick={() => setAmount(p)}
               aria-pressed={amount === p}
-              className={`min-h-11 rounded-md border px-4 ${amount === p ? "border-teal bg-teal text-white" : "border-line bg-white"}`}
+              className={`min-h-11 rounded-full border-2 px-4 font-bold transition-colors ${amount === p ? "border-brand bg-brand text-white" : "border-brand/20 bg-white text-ink hover:border-brand hover:bg-brand-50"}`}
             >
               ₦{Number(p).toLocaleString("en-NG")}
             </button>

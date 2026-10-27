@@ -65,7 +65,7 @@ export function Uploader({
         ref={input}
         type="file"
         accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4,text/plain"
-        className="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-teal-50 file:px-4 file:font-semibold file:text-teal"
+        className="block w-full text-sm file:mr-3 file:min-h-11 file:rounded-md file:border-0 file:bg-brand-50 file:px-4 file:font-semibold file:text-brand"
       />
       <div>
         <button type="button" onClick={upload} disabled={busy} className={buttonClass("secondary")}>
@@ -75,7 +75,7 @@ export function Uploader({
       <p
         role="status"
         aria-live="polite"
-        className={status?.tone === "error" ? "text-sm font-medium text-coral-700" : "text-sm text-teal"}
+        className={status?.tone === "error" ? "text-sm font-medium text-danger-700" : "text-sm text-brand"}
       >
         {status?.text}
       </p>
@@ -98,7 +98,7 @@ export function UploadField({
     <div>
       <Uploader purpose={purpose} label={label} onUploaded={setFileId} />
       <input type="hidden" name={name} value={fileId} />
-      {fileId && <p className="text-sm text-teal">This file will be attached when you submit.</p>}
+      {fileId && <p className="text-sm text-brand">This file will be attached when you submit.</p>}
     </div>
   );
 }

@@ -204,7 +204,7 @@ export default async function PaymentsPage({
                   {["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(r.status) &&
                     actor.permissions.has("finance.refund.request") && (
                       <details>
-                        <summary className="cursor-pointer text-sm text-teal">Request refund</summary>
+                        <summary className="cursor-pointer text-sm text-brand">Request refund</summary>
                         <ActionForm action={refund.bind(null, r.id)} className="mt-1">
                           <input
                             name="amount"

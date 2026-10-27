@@ -18,19 +18,19 @@ export default async function StoriesPage() {
       <div className="grid gap-4 sm:grid-cols-4">
         <Card>
           <p className="text-sm text-muted">Cases approved after verification</p>
-          <p className="text-2xl font-bold text-teal">{impact.casesApproved}</p>
+          <p className="text-2xl font-bold text-brand">{impact.casesApproved}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Interventions completed</p>
-          <p className="text-2xl font-bold text-teal">{impact.interventionsCompleted}</p>
+          <p className="text-2xl font-bold text-brand">{impact.interventionsCompleted}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Spent on approved interventions</p>
-          <p className="text-2xl font-bold text-teal">{formatMoney(impact.fundingDeliveredMinor)}</p>
+          <p className="text-2xl font-bold text-brand">{formatMoney(impact.fundingDeliveredMinor)}</p>
         </Card>
         <Card>
           <p className="text-sm text-muted">Completion rate (closed interventions)</p>
-          <p className="text-2xl font-bold text-teal">
+          <p className="text-2xl font-bold text-brand">
             {impact.completionRate === null ? "Not yet measurable" : `${impact.completionRate}%`}
           </p>
         </Card>
