@@ -29,7 +29,7 @@ export default async function ApplyHome() {
           columns={[
             {
               header: "Reference",
-              className: "whitespace-nowrap",
+              className: "@2xl:whitespace-nowrap",
               cell: (a) => (
                 <Link href={`/apply/${a.reference}`} className="font-semibold">
                   {a.reference}

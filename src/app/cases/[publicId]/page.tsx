@@ -53,7 +53,7 @@ export default async function CasePage({ params }: { params: Promise<{ publicId:
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <article>
         <div className="bg-sunrise relative mb-6 flex h-40 items-center justify-center overflow-hidden rounded-[var(--radius-card)] sm:h-52">
           <span aria-hidden="true" className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-white/20" />

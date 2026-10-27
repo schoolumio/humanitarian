@@ -139,7 +139,7 @@ export default async function CaseWorkspace({ params }: { params: Promise<{ id: 
         </Card>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0">
           <Card>
             <h2 className="mb-3 text-lg">Applicant&apos;s request</h2>

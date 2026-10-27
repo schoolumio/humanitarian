@@ -53,6 +53,8 @@
     color: var(--color-ink);
     font-size: 1.0625rem;
     line-height: 1.65;
+    /* Long unbroken strings (emails, references, links) wrap instead of overflowing. */
+    overflow-wrap: break-word;
   }
   h1,
   h2,

@@ -123,7 +123,7 @@ export function CampaignForm({
         <legend className="mb-2 font-semibold">Itemised budget (the target is the total)</legend>
         <div className="flex flex-col gap-2">
           {Array.from({ length: rows }).map((_, i) => (
-            <div key={i} className="grid gap-2 sm:grid-cols-[1fr_10rem]">
+            <div key={i} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem]">
               <input
                 name={`budgetLines.${i}.description`}
                 defaultValue={lines?.[i]?.description}

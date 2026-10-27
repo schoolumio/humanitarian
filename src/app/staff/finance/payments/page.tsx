@@ -132,7 +132,7 @@ export default async function PaymentsPage({
           columns={[
             {
               header: "Reference",
-              className: "whitespace-nowrap",
+              className: "@2xl:whitespace-nowrap",
               cell: (r) => <span className="font-mono text-sm">{r.reference}</span>,
             },
             {

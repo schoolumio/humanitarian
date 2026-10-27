@@ -76,7 +76,7 @@ export default async function CasesQueue({
             columns={[
               {
                 header: "Reference",
-                className: "whitespace-nowrap",
+                className: "@2xl:whitespace-nowrap",
                 cell: (r) => (
                   <Link href={`/staff/applications/${r.id}`} className="font-semibold">
                     {r.reference}

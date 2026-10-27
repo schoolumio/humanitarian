@@ -124,7 +124,7 @@ export default async function HomePage() {
     <div className="-mt-8 sm:-mt-10">
       {/* Hero */}
       <Band className="bg-blush overflow-hidden pb-16 pt-10 sm:pt-16">
-        <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <div>
             <Eyebrow>
               <HeartIcon className="h-4 w-4" /> Verified humanitarian support in Nigeria
@@ -318,7 +318,7 @@ export default async function HomePage() {
                     >
                       <Icon />
                     </span>
-                    <span>
+                    <span className="min-w-0">
                       <span className="block font-[family-name:var(--font-display)] font-bold">{c.name}</span>
                       <span className="mt-1 block text-sm text-muted">{c.description}</span>
                     </span>
@@ -336,7 +336,7 @@ export default async function HomePage() {
 
       {/* Impact */}
       <Band className="bg-dusk py-16 text-white" id="outcomes">
-        <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr] lg:items-center">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-center">
           <div>
             <Eyebrow tone="light">Verified outcomes</Eyebrow>
             <h2 className="mt-4 text-3xl text-white sm:text-4xl">Change you can see – and trust</h2>

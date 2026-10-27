@@ -302,7 +302,7 @@ export default async function StepPage({ params }: { params: Promise<{ reference
               return (
                 <fieldset
                   key={i}
-                  className="grid gap-2 rounded border border-line p-3 sm:grid-cols-[1fr_6rem_9rem]"
+                  className="grid gap-2 rounded border border-line p-3 sm:grid-cols-[minmax(0,1fr)_6rem_9rem]"
                 >
                   <legend className="px-1 text-sm font-semibold">
                     Item {i + 1}
