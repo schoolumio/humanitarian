@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { AuthShell } from "@/components/layout/auth-shell";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
-import { Alert, Card, Field, inputClass } from "@/components/ui";
+import { Alert, Field, inputClass } from "@/components/ui";
 import { resetPasswordAction } from "../actions";
 
 export const metadata: Metadata = { title: "Choose a new password" };
@@ -13,9 +14,8 @@ export default async function ResetPasswordPage({
   const { token } = await searchParams;
   if (!token) return <Alert tone="danger" title="This reset link is incomplete. Please request a new one." />;
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="mb-4 text-3xl">Choose a new password</h1>
-      <Card>
+    <AuthShell title="Choose a new password">
+      <>
         <ActionForm action={resetPasswordAction}>
           <input type="hidden" name="token" value={token} />
           <Field label="New password" name="password" hint="At least 10 characters.">
@@ -40,7 +40,7 @@ export default async function ResetPasswordPage({
           </Field>
           <SubmitButton>Change password</SubmitButton>
         </ActionForm>
-      </Card>
-    </div>
+      </>
+    </AuthShell>
   );
 }

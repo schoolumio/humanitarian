@@ -108,6 +108,27 @@ export const ArrowRight = ({ className = "h-5 w-5", label }: P) => (
 );
 
 /** Icon and colour scheme for each support category (by slug), with a sensible fallback. */
+const line = (d: string) =>
+  function LineIcon({ className = "h-5 w-5", label }: P) {
+    return (
+      <svg viewBox="0 0 24 24" className={className} {...base(label)}>
+        <path {...stroke} d={d} />
+      </svg>
+    );
+  };
+export const GridIcon = line("M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z");
+export const FileIcon = line(
+  "M14 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V8l-5-5Zm0 0v5h5M9 13h6M9 17h4",
+);
+export const UserIcon = line("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7.5 8.5c.8-3.6 3.8-6 7.5-6s6.7 2.4 7.5 6");
+export const ChatIcon = line("M4 5.5h16v10H9l-5 4v-14ZM8 9.5h8M8 12.5h5");
+export const AlertIcon = line("M12 4 2.8 19.5h18.4L12 4Zm0 6v4.5m0 2.5v.5");
+export const ChartIcon = line("M4 20V4m0 16h16M8 16v-4m4 4V8m4 8v-6");
+export const ListIcon = line("M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01");
+export const MailIcon = line("M3.5 6h17v12h-17zM4 6.5l8 6 8-6");
+export const CameraIcon = line("M4 8h3.5L9 5.5h6L16.5 8H20v11H4V8Zm8 8.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z");
+export const LockIcon = line("M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3");
+
 export const CATEGORY_STYLE: Record<
   string,
   { Icon: (p: P) => React.JSX.Element; tint: string; ink: string }

@@ -130,7 +130,11 @@ export default async function PaymentsPage({
           rows={res.rows}
           rowKey={(r) => r.id}
           columns={[
-            { header: "Reference", cell: (r) => <span className="font-mono text-sm">{r.reference}</span> },
+            {
+              header: "Reference",
+              className: "whitespace-nowrap",
+              cell: (r) => <span className="font-mono text-sm">{r.reference}</span>,
+            },
             {
               header: "Campaign",
               cell: (r) => <Link href={`/cases/${r.campaign.publicId}`}>{r.campaign.title}</Link>,

@@ -52,7 +52,7 @@ export default async function ComplaintPage({ params }: { params: Promise<{ id: 
     });
   }
   return (
-    <div className="max-w-3xl">
+    <div>
       <PageHeader
         title={`Complaint ${c.reference}`}
         description={

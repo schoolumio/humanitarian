@@ -31,7 +31,7 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-white/90 backdrop-blur">
       <div aria-hidden="true" className="h-1.5 bg-sunrise" />
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="no-underline" aria-label={`${BRAND.name} home`}>
           <Logo />
         </Link>
@@ -133,7 +133,7 @@ export function SiteFooter() {
         <path d="M0 0h1440v20c-240 40-480 40-720 0S240-20 0 20Z" fill="currentColor" />
       </svg>
       <div>
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:px-8 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <Logo inverse />
             <p className="mt-3 font-semibold text-white">{BRAND.tagline}</p>
@@ -192,7 +192,7 @@ export function SiteFooter() {
           </nav>
         </div>
         <div className="border-t border-white/15">
-          <p className="mx-auto max-w-6xl px-4 py-5 text-sm text-white/85">
+          <p className="mx-auto max-w-7xl px-4 py-5 text-sm sm:px-6 lg:px-8 text-white/85">
             © {new Date().getFullYear()} {BRAND.name}. Made with care in Nigeria.
           </p>
         </div>

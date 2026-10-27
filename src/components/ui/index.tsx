@@ -48,19 +48,29 @@ export function PageHeader({
   title,
   description,
   actions,
+  eyebrow,
 }: {
   title: string;
   description?: ReactNode;
   actions?: ReactNode;
+  eyebrow?: string;
 }) {
   return (
-    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <span aria-hidden="true" className="mb-3 block h-1.5 w-14 rounded-full bg-sunrise" />
-        <h1 className="text-3xl sm:text-4xl">{title}</h1>
-        {description && <p className="mt-1 max-w-3xl text-muted">{description}</p>}
+    <div className="bg-blush relative mb-8 overflow-hidden rounded-[1.75rem] border border-brand-100 px-6 py-6 shadow-[var(--shadow-soft)] sm:px-8 sm:py-7">
+      <span aria-hidden="true" className="absolute -right-10 -top-16 h-48 w-48 rounded-full bg-sun/25" />
+      <span aria-hidden="true" className="absolute -bottom-20 right-40 h-36 w-36 rounded-full bg-brand/10" />
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          {eyebrow ? (
+            <p className="mb-2 text-sm font-extrabold uppercase tracking-wider text-brand">{eyebrow}</p>
+          ) : (
+            <span aria-hidden="true" className="mb-3 block h-1.5 w-14 rounded-full bg-sunrise" />
+          )}
+          <h1 className="break-words text-3xl sm:text-4xl">{title}</h1>
+          {description && <div className="mt-2 max-w-3xl text-muted">{description}</div>}
+        </div>
+        {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
 }
@@ -78,7 +88,12 @@ export type Tone = keyof typeof tones;
 /** Status badges always carry text (never colour alone). */
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span className={cx("inline-block rounded-full border px-3 py-0.5 text-sm font-bold", tones[tone])}>
+    <span
+      className={cx(
+        "inline-block whitespace-nowrap rounded-full border px-3 py-0.5 text-sm font-bold",
+        tones[tone],
+      )}
+    >
       {children}
     </span>
   );
@@ -237,7 +252,7 @@ export function DataTable<T>({
   caption?: string;
 }) {
   return (
-    <div className="card overflow-hidden">
+    <div className="card overflow-x-auto">
       <table className="w-full border-collapse text-left text-[0.95rem]">
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead className="hidden bg-[#f6f1fb] md:table-header-group">
@@ -246,7 +261,7 @@ export function DataTable<T>({
               <th
                 key={c.header}
                 scope="col"
-                className="px-4 py-3 text-sm font-bold uppercase tracking-wide text-grape"
+                className="whitespace-nowrap px-3 py-3 text-xs font-extrabold uppercase tracking-wider text-grape"
               >
                 {c.header}
               </th>
@@ -257,12 +272,12 @@ export function DataTable<T>({
           {rows.map((r) => (
             <tr
               key={rowKey(r)}
-              className="block border-t border-line p-3 first:border-t-0 md:table-row md:p-0"
+              className="block border-t border-line p-3 transition-colors first:border-t-0 hover:bg-cream md:table-row md:p-0"
             >
               {columns.map((c) => (
                 <td
                   key={c.header}
-                  className={cx("flex gap-2 py-1 md:table-cell md:px-4 md:py-3 md:align-top", c.className)}
+                  className={cx("flex gap-2 py-1 md:table-cell md:px-3 md:py-3 md:align-top", c.className)}
                 >
                   <span className="w-32 shrink-0 text-sm text-muted md:hidden">{c.header}</span>
                   <span className="min-w-0 break-words">{c.cell(r)}</span>

@@ -112,13 +112,19 @@ export function ActionForm({
     return () => form.removeEventListener("input", onInput);
   }, [autosaveKey]);
   return (
-    <form id={id} ref={ref} action={formAction} className={cx("flex flex-col gap-4", className)} noValidate>
+    <form
+      id={id}
+      ref={ref}
+      action={formAction}
+      className={cx("flex flex-col gap-4 [&>button]:self-start [&>button]:justify-self-start", className)}
+      noValidate
+    >
       {state?.error && (
         <div
           ref={summaryRef}
           tabIndex={-1}
           role="alert"
-          className="rounded-2xl border border-danger/40 bg-brand-50 p-4 text-danger-700"
+          className="col-span-full rounded-2xl border border-danger/40 bg-brand-50 p-4 text-danger-700"
         >
           <p className="font-semibold">{state.error}</p>
           {state.fieldErrors && Object.keys(state.fieldErrors).length > 0 && (
@@ -133,7 +139,7 @@ export function ActionForm({
       {state?.ok && !state.message && successMessage && (
         <div
           role="status"
-          className="rounded-2xl border border-leaf/30 bg-leaf-50 p-4 font-semibold text-leaf"
+          className="col-span-full rounded-2xl border border-leaf/30 bg-leaf-50 p-4 font-semibold text-leaf"
         >
           {successMessage}
         </div>

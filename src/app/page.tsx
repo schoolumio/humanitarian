@@ -26,8 +26,8 @@ export const dynamic = "force-dynamic";
 /** Full-width band that breaks out of the page container. */
 function Band({ className, children, id }: { className?: string; children: ReactNode; id?: string }) {
   return (
-    <section id={id} className={cx("relative mx-[calc(50%-50vw)] px-4", className)}>
-      <div className="mx-auto max-w-6xl">{children}</div>
+    <section id={id} className={cx("relative mx-[calc(50%-50vw)]", className)}>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">{children}</div>
     </section>
   );
 }

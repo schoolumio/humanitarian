@@ -44,13 +44,13 @@ export default async function SponsorHome() {
 
   if (!dash) {
     return (
-      <div className="max-w-2xl">
+      <div>
         <PageHeader
           title="Register your organisation"
           description="KindSpring reviews every organisation before granting access to case details."
         />
         <Card>
-          <ActionForm action={register}>
+          <ActionForm action={register} className="sm:grid sm:grid-cols-2 sm:gap-5">
             <Field label="Organisation name" name="name">
               <input id="name" name="name" className={inputClass} />
             </Field>
@@ -78,13 +78,15 @@ export default async function SponsorHome() {
             <Field label="Contact phone" name="contactPhone">
               <input id="contactPhone" name="contactPhone" className={inputClass} />
             </Field>
-            <Field label="About your organisation" name="description">
-              <textarea id="description" name="description" rows={3} className={inputClass} />
-            </Field>
+            <div className="sm:col-span-2">
+              <Field label="About your organisation" name="description">
+                <textarea id="description" name="description" rows={3} className={inputClass} />
+              </Field>
+            </div>
             <Field label="Your job title" name="jobTitle">
               <input id="jobTitle" name="jobTitle" className={inputClass} />
             </Field>
-            <label className="flex items-center gap-2">
+            <label className="flex items-center gap-2 sm:col-span-2">
               <input type="checkbox" name="isAuthorisedRepresentative" className="h-5 w-5" /> I am authorised
               to sign agreements on behalf of this organisation
             </label>

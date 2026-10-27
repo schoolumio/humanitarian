@@ -53,7 +53,7 @@ export default async function AgreementPage({ params }: { params: Promise<{ id: 
     return withRedirect(res, url);
   }
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader
         title={`Sponsorship: ${a.campaign.title}`}
         description={

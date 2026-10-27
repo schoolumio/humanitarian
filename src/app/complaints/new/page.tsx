@@ -31,7 +31,7 @@ export default async function NewComplaintPage() {
         <strong>If someone is in immediate danger, call 112 first.</strong> Safeguarding concerns are seen
         only by our safeguarding officers.
       </p>
-      <div className="mt-4 max-w-xl">
+      <div className="mt-4">
         <ActionForm action={send} resetOnSuccess>
           <Field label="Your name" name="contactName">
             <input id="contactName" name="contactName" defaultValue={actor?.name} className={inputClass} />

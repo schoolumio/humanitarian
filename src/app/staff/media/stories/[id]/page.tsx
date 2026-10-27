@@ -79,7 +79,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
   const external = !["CAMPAIGN_PAGE", "SPONSOR_REPORT", "INTERNAL_ONLY"].includes(s.channel);
   const m = s.metrics as { views?: number; reactions?: number; shares?: number; recordedAt?: string } | null;
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader
         title={s.title}
         description={

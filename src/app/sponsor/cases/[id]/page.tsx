@@ -37,7 +37,7 @@ export default async function SponsorCase({ params }: { params: Promise<{ id: st
     });
   }
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader title={c.title} description={`${c.category.name} · ${c.locationLabel}`} />
       <Card>
         <FundingSummary c={c} />

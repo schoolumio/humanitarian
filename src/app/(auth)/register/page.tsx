@@ -1,7 +1,8 @@
 import Link from "@/components/ui/link";
 import type { Metadata } from "next";
+import { AuthShell } from "@/components/layout/auth-shell";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
-import { Card, Field, inputClass } from "@/components/ui";
+import { Field, inputClass } from "@/components/ui";
 import { registerAction } from "../actions";
 
 export const metadata: Metadata = { title: "Create an account" };
@@ -15,27 +16,26 @@ const ROLES = [
 export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ role?: string }> }) {
   const { role = "APPLICANT" } = await searchParams;
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="mb-2 text-3xl">Create an account</h1>
+    <AuthShell title="Create an account">
       <p className="mb-4 text-muted">
         You need an account so you can save your progress and check the status of your request or
         contributions.
       </p>
-      <Card>
+      <>
         <ActionForm action={registerAction} resetOnSuccess>
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 font-semibold">How will you use KindSpring?</legend>
             {ROLES.map((r) => (
               <label
                 key={r.value}
-                className="flex min-h-11 items-center gap-3 rounded border border-line px-3"
+                className="flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-2 border-line px-4 font-semibold transition-colors hover:border-brand/40 has-[:checked]:border-brand has-[:checked]:bg-brand-50"
               >
                 <input
                   type="radio"
                   name="role"
                   value={r.value}
                   defaultChecked={r.value === role}
-                  className="h-5 w-5"
+                  className="h-5 w-5 accent-[#c8174f]"
                 />
                 {r.label}
               </label>
@@ -89,10 +89,10 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
           </p>
           <SubmitButton pendingText="Creating account…">Create account</SubmitButton>
         </ActionForm>
-      </Card>
+      </>
       <p className="mt-4">
         Already registered? <Link href="/login">Sign in</Link>
       </p>
-    </div>
+    </AuthShell>
   );
 }

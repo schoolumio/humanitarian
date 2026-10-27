@@ -29,7 +29,7 @@ export default function ContactPage() {
         If someone is in immediate danger, call 112. To report a safeguarding concern or make a complaint, use
         the <a href="/complaints/new">complaints form</a>.
       </p>
-      <div className="not-prose mt-4 max-w-xl">
+      <div className="not-prose mt-4">
         <ActionForm action={send} resetOnSuccess>
           <Field label="Your name" name="name">
             <input id="name" name="name" className={inputClass} autoComplete="name" />

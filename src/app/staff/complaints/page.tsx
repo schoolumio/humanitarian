@@ -37,6 +37,7 @@ export default async function ComplaintsPage({
           columns={[
             {
               header: "Reference",
+              className: "whitespace-nowrap",
               cell: (r) => (
                 <Link href={`/staff/complaints/${r.id}`} className="font-semibold">
                   {r.reference}

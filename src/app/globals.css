@@ -91,6 +91,9 @@
 }
 
 @layer components {
+  .prose-ks > :first-child {
+    margin-top: 0;
+  }
   .prose-ks p {
     margin: 0.75rem 0;
   }

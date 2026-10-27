@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { AuthShell } from "@/components/layout/auth-shell";
 import { ActionForm, SubmitButton } from "@/components/ui/form";
-import { Card, Field, inputClass } from "@/components/ui";
+import { Field, inputClass } from "@/components/ui";
 import { getActor, getPendingMfaSession } from "@/server/current-user";
 import { mfaChallengeAction } from "../actions";
 
@@ -13,14 +14,13 @@ export default async function MfaPage({ searchParams }: { searchParams: Promise<
   const actor = await getActor();
   if (!pending && !actor) redirect("/login");
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="mb-2 text-3xl">Two-step verification</h1>
+    <AuthShell title="Two-step verification">
       <p className="mb-4 text-muted">
         {pending
           ? "Enter the 6-digit code from your authenticator app to finish signing in."
           : "This action needs you to confirm your identity again. Enter the 6-digit code from your authenticator app."}
       </p>
-      <Card>
+      <>
         <ActionForm action={mfaChallengeAction}>
           <input type="hidden" name="next" value={next} />
           <Field label="6-digit code" name="code">
@@ -37,7 +37,7 @@ export default async function MfaPage({ searchParams }: { searchParams: Promise<
           </Field>
           <SubmitButton pendingText="Checking…">Verify</SubmitButton>
         </ActionForm>
-      </Card>
-    </div>
+      </>
+    </AuthShell>
   );
 }

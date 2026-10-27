@@ -81,7 +81,7 @@ export default async function ApplicationStatusPage({
   }
 
   return (
-    <div className="max-w-3xl">
+    <div>
       <PageHeader
         title={`Request ${app.reference}`}
         description={`Submitted ${formatDate(app.submittedAt)}`}
@@ -166,19 +166,28 @@ export default async function ApplicationStatusPage({
       )}
 
       <Section title="Progress">
-        <ol className="flex flex-col gap-2">
-          {history.map((h, i) => (
-            <li key={i} className="flex gap-3">
-              <span className="w-36 shrink-0 text-sm text-muted">{formatDate(h.createdAt, true)}</span>
-              <span>
-                {APPLICANT_STATUS_TEXT[h.toStatus as keyof typeof APPLICANT_STATUS_TEXT]?.label ?? h.toStatus}
-              </span>
-            </li>
-          ))}
-        </ol>
-        {app.requestedAmountMinor !== null && (
-          <p className="mt-3 text-sm text-muted">Amount requested: {formatMoney(app.requestedAmountMinor)}</p>
-        )}
+        <div className="card p-6">
+          <ol className="relative flex flex-col gap-5 border-l-2 border-brand-100 pl-6">
+            {history.map((h, i) => (
+              <li key={i} className="relative">
+                <span
+                  aria-hidden="true"
+                  className={`absolute -left-[2.05rem] top-1 h-4 w-4 rounded-full ring-4 ring-white ${i === history.length - 1 ? "bg-sunrise" : "bg-brand-100"}`}
+                />
+                <span className="block font-bold text-ink">
+                  {APPLICANT_STATUS_TEXT[h.toStatus as keyof typeof APPLICANT_STATUS_TEXT]?.label ??
+                    h.toStatus}
+                </span>
+                <span className="block text-sm text-muted">{formatDate(h.createdAt, true)}</span>
+              </li>
+            ))}
+          </ol>
+          {app.requestedAmountMinor !== null && (
+            <p className="mt-5 border-t border-line pt-4 text-sm text-muted">
+              Amount requested: <strong className="text-ink">{formatMoney(app.requestedAmountMinor)}</strong>
+            </p>
+          )}
+        </div>
       </Section>
 
       <Section title="Your publicity and sharing choices">
