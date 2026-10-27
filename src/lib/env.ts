@@ -124,7 +124,11 @@ let cached: Env | undefined;
 
 export function env(): Env {
   if (!cached) {
-    const parsed = schema.safeParse(process.env);
+    // Treat empty values (e.g. `CRON_SECRET=` copied from .env.example) as unset.
+    const raw = Object.fromEntries(
+      Object.entries(process.env).filter(([, v]) => v !== undefined && v !== ""),
+    );
+    const parsed = schema.safeParse(raw);
     if (!parsed.success) {
       const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
       throw new Error(`Invalid server configuration: ${issues}`);
